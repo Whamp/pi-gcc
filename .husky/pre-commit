@@ -1,5 +1,2 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-npx lint-staged
-npx gitleaks protect --staged
+pnpm exec lint-staged
+pnpm exec gitleaks protect --staged

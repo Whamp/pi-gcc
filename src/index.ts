@@ -1,9 +1,9 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
-export default function (pi: ExtensionAPI) {
+export default function activate(pi: ExtensionAPI) {
   // React to events
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("session_start", (_event, ctx) => {
     ctx.ui.notify("Extension loaded!", "info");
   });
 
@@ -15,19 +15,20 @@ export default function (pi: ExtensionAPI) {
     parameters: Type.Object({
       name: Type.String({ description: "Name to greet" }),
     }),
-    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-      return {
+    execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+      return Promise.resolve({
         content: [{ type: "text", text: `Hello, ${params.name}!` }],
         details: {},
-      };
+      });
     },
   });
 
   // Register a command
   pi.registerCommand("hello", {
     description: "Say hello",
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       ctx.ui.notify(`Hello ${args || "world"}!`, "info");
+      return Promise.resolve();
     },
   });
 }
