@@ -16,6 +16,33 @@ describe("parseYaml", () => {
     });
   });
 
+  it("parses top-level list of one-level objects", () => {
+    const input = [
+      "sessions:",
+      "  - file: /tmp/session-1.jsonl",
+      "    branch: main",
+      '    started: "2026-02-23T00:00:00Z"',
+      "  - file: /tmp/session-2.jsonl",
+      "    branch: feature-x",
+      '    started: "2026-02-23T01:00:00Z"',
+    ].join("\n");
+
+    expect(parseYaml(input)).toStrictEqual({
+      sessions: [
+        {
+          file: "/tmp/session-1.jsonl",
+          branch: "main",
+          started: "2026-02-23T00:00:00Z",
+        },
+        {
+          file: "/tmp/session-2.jsonl",
+          branch: "feature-x",
+          started: "2026-02-23T01:00:00Z",
+        },
+      ],
+    });
+  });
+
   it("returns empty object for empty or whitespace input", () => {
     expect(parseYaml("")).toStrictEqual({});
     expect(parseYaml("  \n  ")).toStrictEqual({});
@@ -37,10 +64,38 @@ describe("serializeYaml", () => {
     );
   });
 
+  it("serializes top-level list of one-level objects", () => {
+    const obj = {
+      sessions: [
+        {
+          file: "/tmp/session-1.jsonl",
+          branch: "main",
+          started: "2026-02-23T00:00:00Z",
+        },
+      ],
+    };
+
+    expect(serializeYaml(obj)).toBe(
+      [
+        "sessions:",
+        '  - file: "/tmp/session-1.jsonl"',
+        "    branch: main",
+        '    started: "2026-02-23T00:00:00Z"',
+      ].join("\n")
+    );
+  });
+
   it("round-trips through parse and serialize", () => {
     const original = {
       active_branch: "main",
       last_commit: { branch: "main", hash: "abc" },
+      sessions: [
+        {
+          file: "/tmp/session.jsonl",
+          branch: "main",
+          started: "2026-02-23T00:00:00Z",
+        },
+      ],
     };
     expect(parseYaml(serializeYaml(original))).toStrictEqual(original);
   });

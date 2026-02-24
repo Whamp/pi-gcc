@@ -172,6 +172,16 @@ export default function activate(pi: ExtensionAPI) {
       return;
     }
 
+    const sessionFile = ctx.sessionManager.getSessionFile();
+    if (sessionFile) {
+      state.upsertSession(
+        sessionFile,
+        state.activeBranch,
+        new Date().toISOString()
+      );
+      state.save();
+    }
+
     const turnCount = branchManager.getLogTurnCount(state.activeBranch);
     ctx.ui.notify(
       `GCC active: branch "${state.activeBranch}" (${turnCount} uncommitted turn${turnCount === 1 ? "" : "s"}).`,

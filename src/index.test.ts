@@ -169,6 +169,39 @@ describe("extensionWiring", () => {
     }
   });
 
+  it("registers session file in state.yaml on session_start", async () => {
+    const { projectDir, cleanup } = setupInitializedProject();
+    try {
+      const mockPi = createMockPi();
+      activate(mockPi.api);
+
+      const ui = createMockUi();
+      const ctx = {
+        cwd: projectDir,
+        ui,
+        sessionManager: {
+          getSessionFile: () => "/tmp/pi-session-123.jsonl",
+        },
+      } as unknown as ExtensionContext;
+
+      const sessionStart = getHandler(mockPi.handlers, "session_start");
+      await sessionStart?.({ type: "session_start" }, ctx);
+      await sessionStart?.({ type: "session_start" }, ctx);
+
+      const stateYaml = fs.readFileSync(
+        path.join(projectDir, ".gcc", "state.yaml"),
+        "utf8"
+      );
+
+      expect(stateYaml).toContain("sessions:");
+      expect(stateYaml).toContain("/tmp/pi-session-123.jsonl");
+      const matches = stateYaml.match(/\/tmp\/pi-session-123\.jsonl/g);
+      expect(matches?.length).toBe(1);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("discovers GCC skill path with ESM-safe resolution", async () => {
     const mockPi = createMockPi();
     activate(mockPi.api);
@@ -195,7 +228,13 @@ describe("extensionWiring", () => {
       activate(mockPi.api);
 
       const ui = createMockUi();
-      const ctx = { cwd: projectDir, ui } as unknown as ExtensionContext;
+      const ctx = {
+        cwd: projectDir,
+        ui,
+        sessionManager: {
+          getSessionFile: () => "/tmp/pi-session-finalize.jsonl",
+        },
+      } as unknown as ExtensionContext;
 
       const sessionStart = getHandler(mockPi.handlers, "session_start");
       await sessionStart?.({ type: "session_start" }, ctx);

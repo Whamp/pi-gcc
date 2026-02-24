@@ -93,4 +93,44 @@ describe("gccState", () => {
       summary: "Decided on X",
     });
   });
+
+  it("tracks sessions and persists them", () => {
+    fs.writeFileSync(
+      path.join(gccDir, "state.yaml"),
+      [
+        "active_branch: main",
+        'initialized: "2026-02-22T14:00:00Z"',
+        "sessions:",
+        "  - file: /tmp/session-1.jsonl",
+        "    branch: main",
+        '    started: "2026-02-23T00:00:00Z"',
+      ].join("\n")
+    );
+
+    const state = new GccState(tmpDir);
+    state.load();
+    state.upsertSession(
+      "/tmp/session-2.jsonl",
+      "feature-x",
+      "2026-02-23T01:00:00Z"
+    );
+    state.upsertSession("/tmp/session-1.jsonl", "main", "2026-02-23T00:00:00Z");
+    state.save();
+
+    const reloaded = new GccState(tmpDir);
+    reloaded.load();
+
+    expect(reloaded.sessions).toStrictEqual([
+      {
+        file: "/tmp/session-1.jsonl",
+        branch: "main",
+        started: "2026-02-23T00:00:00Z",
+      },
+      {
+        file: "/tmp/session-2.jsonl",
+        branch: "feature-x",
+        started: "2026-02-23T01:00:00Z",
+      },
+    ]);
+  });
 });
