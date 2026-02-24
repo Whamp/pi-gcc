@@ -22,6 +22,7 @@ describe("gcc-init.sh", () => {
 
     expect(fs.existsSync(path.join(tmpDir, ".gcc/state.yaml"))).toBeTruthy();
     expect(fs.existsSync(path.join(tmpDir, ".gcc/AGENTS.md"))).toBeTruthy();
+    expect(fs.existsSync(path.join(tmpDir, ".gcc/main.md"))).toBeTruthy();
     expect(
       fs.existsSync(path.join(tmpDir, ".gcc/branches/main/log.md"))
     ).toBeTruthy();
@@ -41,12 +42,15 @@ describe("gcc-init.sh", () => {
     expect(state).toContain("initialized:");
   });
 
-  it("creates root AGENTS.md with GCC section", () => {
+  it("creates root AGENTS.md with static GCC section", () => {
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
     expect(agents).toContain("## GCC");
-    expect(agents).toContain("gcc_context");
+    expect(agents).toContain(
+      "Tools: gcc_commit, gcc_branch, gcc_merge, gcc_switch, gcc_context"
+    );
+    expect(agents).not.toContain("Current branch:");
   });
 
   it("appends to existing AGENTS.md without duplicating", () => {
@@ -84,6 +88,15 @@ describe("gcc-init.sh", () => {
 
     const stateAfter = fs.readFileSync(statePath, "utf8");
     expect(stateAfter).toContain("modified: true");
+  });
+
+  it("adds log.md pattern to .gitignore idempotently", () => {
+    execFileSync("bash", [scriptPath], { cwd: tmpDir });
+    execFileSync("bash", [scriptPath], { cwd: tmpDir });
+
+    const gitignore = fs.readFileSync(path.join(tmpDir, ".gitignore"), "utf8");
+    const matches = gitignore.match(/^\.gcc\/branches\/\*\/log\.md$/gm);
+    expect(matches?.length).toBe(1);
   });
 
   it("writes .gcc/AGENTS.md with protocol reference", () => {

@@ -12,7 +12,10 @@ GCC_DIR=".gcc"
 BRANCHES_DIR="$GCC_DIR/branches/main"
 STATE_FILE="$GCC_DIR/state.yaml"
 GCC_AGENTS_FILE="$GCC_DIR/AGENTS.md"
+MAIN_MD_FILE="$GCC_DIR/main.md"
 ROOT_AGENTS_FILE="AGENTS.md"
+GITIGNORE_FILE=".gitignore"
+LOG_IGNORE_PATTERN=".gcc/branches/*/log.md"
 
 # --- Create .gcc directory structure (skip if already exists) ---
 
@@ -34,6 +37,10 @@ fi
 
 if [ ! -f "$BRANCHES_DIR/metadata.yaml" ]; then
   touch "$BRANCHES_DIR/metadata.yaml"
+fi
+
+if [ ! -f "$MAIN_MD_FILE" ]; then
+  touch "$MAIN_MD_FILE"
 fi
 
 # --- Write state.yaml (skip if already exists) ---
@@ -62,6 +69,19 @@ if ! grep -q "## GCC" "$ROOT_AGENTS_FILE" 2>/dev/null; then
     echo "" >> "$ROOT_AGENTS_FILE"
   fi
   cat "$TEMPLATES_DIR/root-agents-section.md" >> "$ROOT_AGENTS_FILE"
+fi
+
+# --- Ignore transient branch logs in git (idempotent) ---
+
+if [ ! -f "$GITIGNORE_FILE" ]; then
+  touch "$GITIGNORE_FILE"
+fi
+
+if ! grep -Fxq "$LOG_IGNORE_PATTERN" "$GITIGNORE_FILE"; then
+  if [ -s "$GITIGNORE_FILE" ]; then
+    echo "" >> "$GITIGNORE_FILE"
+  fi
+  echo "$LOG_IGNORE_PATTERN" >> "$GITIGNORE_FILE"
 fi
 
 echo "GCC initialized successfully."
