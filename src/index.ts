@@ -234,18 +234,4 @@ export default function activate(pi: ExtensionAPI) {
     const reminder = buildCompactionReminder(state, branchManager);
     appendCompactionReminder(event, reminder);
   });
-
-  pi.on("session_shutdown", (_event, ctx) => {
-    if (!isGccReady(state, branchManager) || !branchManager) {
-      return;
-    }
-
-    const turnCount = branchManager.getLogTurnCount(state.activeBranch);
-    if (turnCount > 0) {
-      ctx.ui.notify(
-        `GCC has ${turnCount} uncommitted turn${turnCount === 1 ? "" : "s"} on branch "${state.activeBranch}".`,
-        "warning"
-      );
-    }
-  });
 }

@@ -131,7 +131,7 @@ describe("extensionWiring", () => {
     expect(handlerNames).not.toContain("before_agent_start");
     expect(handlerNames).toContain("agent_end");
     expect(handlerNames).toContain("session_start");
-    expect(handlerNames).toContain("session_shutdown");
+    expect(handlerNames).not.toContain("session_shutdown");
     expect(handlerNames).toContain("session_before_compact");
     expect(handlerNames).toContain("resources_discover");
   });
