@@ -30,7 +30,7 @@ After that, inside pi, call `gcc_context` to confirm GCC is active.
 
 It adds 5 tools to pi:
 
-- `gcc_context` — read memory (status, branch, commit, log, metadata)
+- `gcc_context` — read a status overview (use `read` for deep file-level retrieval)
 - `gcc_branch` — create a memory branch
 - `gcc_switch` — switch memory branch
 - `gcc_commit` — checkpoint what the agent learned
@@ -39,7 +39,7 @@ It adds 5 tools to pi:
 It also uses hooks to:
 
 - auto-log turns to `.gcc/branches/<branch>/log.md`
-- inject memory context before a turn starts
+- register session files in `.gcc/state.yaml` on `session_start`
 - finalize 2-step commit flow on `agent_end`
 
 ---
@@ -115,8 +115,9 @@ This creates:
 - `.gcc/branches/main/log.md`
 - `.gcc/branches/main/commits.md`
 - `.gcc/branches/main/metadata.yaml`
+- `.gcc/main.md`
 - `.gcc/AGENTS.md`
-- GCC section in root `AGENTS.md` (if missing)
+- static GCC section in root `AGENTS.md` (if missing)
 
 ---
 

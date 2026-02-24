@@ -37,30 +37,31 @@ Agent guide for this repository.
 
 ## 4) Repository Map
 
-| Path                                     | Purpose                                                                 |
-| ---------------------------------------- | ----------------------------------------------------------------------- |
-| `src/index.ts`                           | Registers GCC tools and extension hooks                                 |
-| `src/gcc-*.ts`                           | Tool implementations (`context`, `branch`, `switch`, `commit`, `merge`) |
-| `src/ota-logger.ts`                      | Converts `turn_end` event into OTA input                                |
-| `src/context-injector.ts`                | Builds `before_agent_start` context message                             |
-| `src/commit-flow.ts`                     | Manages pending commit and `agent_end` extraction                       |
-| `src/branches.ts`                        | `.gcc/branches/*` file operations                                       |
-| `src/state.ts`                           | `.gcc/state.yaml` state management                                      |
-| `src/yaml.ts`                            | Minimal YAML parser/serializer                                          |
-| `skills/gcc/SKILL.md`                    | Agent usage guidance for GCC                                            |
-| `skills/gcc/scripts/gcc-init.sh`         | One-time GCC initialization script                                      |
-| `docs/specs/GCC-SPEC.md`                 | Product specification                                                   |
-| `docs/plans/2026-02-23-gcc-extension.md` | Implementation plan                                                     |
+| Path                                                | Purpose                                                                       |
+| --------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `src/index.ts`                                      | Registers GCC tools and extension hooks                                       |
+| `src/gcc-*.ts`                                      | Tool implementations (`context`, `branch`, `switch`, `commit`, `merge`)       |
+| `src/ota-logger.ts`                                 | Converts `turn_end` event into OTA input                                      |
+| `src/commit-flow.ts`                                | Manages pending commit and `agent_end` extraction                             |
+| `src/branches.ts`                                   | `.gcc/branches/*` file operations                                             |
+| `src/state.ts`                                      | `.gcc/state.yaml` state + session tracking                                    |
+| `src/yaml.ts`                                       | Minimal YAML parser/serializer (scalars, nested maps, top-level object lists) |
+| `skills/gcc/SKILL.md`                               | Agent usage guidance for GCC                                                  |
+| `skills/gcc/scripts/gcc-init.sh`                    | One-time GCC initialization script                                            |
+| `docs/specs/GCC-SPEC-USE-THIS-ONE.md`               | Canonical product specification                                               |
+| `docs/specs/fix-specs-diff.md`                      | Spec-vs-runtime reconciliation notes + approved divergences                   |
+| `docs/plans/2026-02-23-spec-sync-implementation.md` | Spec sync implementation plan                                                 |
 
 ## 5) Runtime Design Facts (Do Not Break)
 
 1. `gcc_commit` is a **2-step flow**:
    - tool call returns preparation/log prompt,
    - `agent_end` finalizes commit from assistant response.
-2. `before_agent_start` injects a hidden custom message (`gcc_context_injection`).
+2. There is **no per-turn context injection hook**. Orientation is explicit via `gcc_context` and `read`.
 3. OTA logging happens in `turn_end` and appends to active branch `log.md`.
-4. `resources_discover` returns GCC skill path using ESM-safe path resolution (`import.meta.url`).
-5. `session_before_compact` is best-effort (mutates `event.customInstructions` in place).
+4. `session_start` registers the current session file in `.gcc/state.yaml` when available.
+5. `resources_discover` returns GCC skill path using ESM-safe path resolution (`import.meta.url`).
+6. `session_before_compact` is best-effort (mutates `event.customInstructions` in place).
 
 ## 6) Coding Constraints Specific to This Repo
 
@@ -91,7 +92,7 @@ Key artifacts to verify:
 - `.gcc/state.yaml`
 - `.gcc/branches/<branch>/log.md`
 - `.gcc/branches/<branch>/commits.md`
-- root `AGENTS.md` GCC section updates
+- root `AGENTS.md` static GCC section (created at init; no runtime milestone updates)
 
 ## 9) Ask Before You Do These
 

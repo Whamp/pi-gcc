@@ -139,3 +139,28 @@ Use these exact filenames going forward:
 - Archived old copy: `docs/specs/GCC-SPEC-WRONG-ONE.md`
 
 Do **not** recreate `docs/specs/GCC-SPEC.md`.
+
+---
+
+## 9) Current implementation status (2026-02-23)
+
+### Completed
+
+- Removed `before_agent_start` context injection from runtime.
+- Removed dynamic root `AGENTS.md` milestone updates from commit/merge flows.
+- Made init output cache-safe:
+  - static root `AGENTS.md` GCC section,
+  - creates `.gcc/main.md`,
+  - idempotently adds `.gcc/branches/*/log.md` to `.gitignore`.
+- Simplified `gcc_context` to status overview + `read`-first deep retrieval guidance.
+- Added `sessions` list support in `.gcc/state.yaml` + `session_start` registration.
+- Aligned lifecycle wiring by removing `session_shutdown` hook.
+
+### Approved divergence (Option 3)
+
+- **Canonical spec:** `gcc_commit` subagent distillation.
+- **Implemented runtime (approved):** keep existing 2-step flow:
+  1. `gcc_commit` returns log preparation context,
+  2. `agent_end` finalizes commit from assistant commit blocks.
+
+This divergence is intentional for v1 to avoid high-risk runtime orchestration complexity. It should remain documented here unless a future version adds a robust subagent execution path inside extension runtime.

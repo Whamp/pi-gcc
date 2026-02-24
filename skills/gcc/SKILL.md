@@ -57,9 +57,13 @@ Each `gcc_commit` produces three blocks:
 - The branch's findings should inform the main line of thinking
 - Include what was learned even if the approach was abandoned
 
-**Important:** Always call `gcc_context --branch <target>` to review the branch's
-history BEFORE calling `gcc_merge`. You need the full context to write a good
-synthesis.
+**Important:** Always review the source branch history BEFORE calling `gcc_merge`.
+Use:
+
+- `gcc_context` for high-level status
+- `read .gcc/branches/<target>/commits.md` for full branch history
+
+You need the full context to write a good synthesis.
 
 ## When to Use Context Retrieval
 
@@ -67,12 +71,14 @@ synthesis.
 - Before making a decision that might conflict with earlier reasoning
 - When you need to recall the rationale behind a previous decision
 
-## Context Levels
+## Context Retrieval
 
-| Level      | What it returns                                   |
-| ---------- | ------------------------------------------------- |
-| `status`   | Roadmap (main.md), all branches, active branch    |
-| `branch`   | Branch purpose, latest commit, recent commit list |
-| `commit`   | Full commit entry for a specific hash             |
-| `log`      | Current OTA trace since last commit               |
-| `metadata` | Structured metadata segment or available segments |
+Use `gcc_context` for high-level status only.
+
+For deep retrieval, use `read` directly:
+
+- `read .gcc/branches/<name>/commits.md` — full branch history
+- `read .gcc/branches/<name>/log.md` — OTA trace since last commit
+- `read .gcc/branches/<name>/metadata.yaml` — structured metadata
+- `read .gcc/main.md` — project roadmap
+- `read .gcc/AGENTS.md` — full protocol reference
