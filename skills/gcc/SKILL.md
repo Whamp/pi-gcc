@@ -1,9 +1,9 @@
-# GCC — Git Context Controller
+---
+name: gcc
+description: Use when working on a project with GCC (Git Context Controller) memory management. Triggers on gcc_context, gcc_commit, gcc_branch, gcc_merge, gcc_switch tool usage, or when the project has a .gcc/ directory.
+---
 
-Use when working on a project with GCC (Git Context Controller) memory management.
-Guides the agent on when to commit memory milestones, when to branch for exploratory
-thinking, how to write effective memory entries, and how to use multi-resolution
-context retrieval.
+# GCC — Git Context Controller
 
 ## Initialization
 
