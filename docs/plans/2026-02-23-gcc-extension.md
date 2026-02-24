@@ -541,7 +541,10 @@ Add focused wiring tests that fail against the scaffold and verify:
 
 - all 5 tools are registered (`gcc_commit`, `gcc_branch`, `gcc_merge`, `gcc_context`, `gcc_switch`)
 - handlers are registered for `turn_end`, `before_agent_start`, `agent_end`, `session_start`, `session_shutdown`, `session_before_compact`, and `resources_discover`
-- `agent_end` follow-up path sends a message with `deliverAs: "followUp"` when commit finalization returns content
+- tool execute handlers return `AgentToolResult` shape (`content` + `details`) and guard when GCC is uninitialized
+- `gcc_commit` execute path sets pending commit state; `agent_end` consumes it and finalizes commit
+- `agent_end` success path shows a user notification (`ctx.ui.notify`) after finalization (no extra follow-up agent turn)
+- `resources_discover` returns GCC skill path via ESM-safe resolution (`import.meta.url`, not `__dirname`)
 
 **Step 2: Run test to verify it fails**
 Run: `pnpm run test -- src/index.test.ts`
@@ -550,15 +553,21 @@ _(or `pnpm run test -- src/index.wiring.test.ts` if split)_
 **Step 3: Write implementation**
 Replace the scaffold.
 
-- Declare `let state: GccState`, `let branchManager: BranchManager`, `const commitFlow = new CommitFlowManager()`.
-- Register 5 tools via `pi.registerTool` with `TypeBox` schemas. Tool `execute` delegates to `src/gcc-*.ts` functions, receiving `ctx.cwd` as `projectDir`.
-- Wire `turn_end` to `extractOtaInput` -> `formatOtaEntry` -> `branchManager.appendLog`.
-- Wire `before_agent_start` to `buildContextInjection`. Return the result directly (it's already a `BeforeAgentStartEventResult`).
-- Wire `agent_end` to `commitFlow.handleAgentEnd`. If it returns data, call `finalizeGccCommit` and `pi.sendMessage({ customType: "gcc_commit_result", content: commitResult, display: true }, { deliverAs: "followUp" })`.
-- Wire `session_start`: load state, initialize branchManager, show notification via `ctx.ui.notify`.
-- Wire `session_shutdown`: check for uncommitted turns, notify user.
-- Wire `session_before_compact`: optionally note GCC state.
-- Wire `resources_discover`: return `{ skillPaths: [path.resolve(__dirname, "../skills/gcc")] }` to auto-discover the GCC skill.
+- Declare `let state: GccState | null = null`, `let branchManager: BranchManager | null = null`, `const commitFlow = new CommitFlowManager()`.
+- Register 5 tools via `pi.registerTool` with `TypeBox` schemas.
+  - Each tool `execute` must return `AgentToolResult` shape: `{ content: [{ type: "text", text: result }], details: {} }`.
+  - Each tool wrapper delegates to `src/gcc-*.ts` functions, passing `ctx.cwd` as `projectDir` where needed.
+  - Guard when `state/branchManager` are `null` or not initialized: return a clear message (`"GCC not initialized. Run gcc-init.sh first."`).
+- Wire `turn_end` to `extractOtaInput` -> `formatOtaEntry` -> `branchManager.appendLog` (skip if GCC not initialized).
+- Wire `before_agent_start` to `buildContextInjection` and return the result directly (skip if GCC not initialized).
+- Wire `agent_end` to `commitFlow.handleAgentEnd`. If it returns data, call `finalizeGccCommit(...)`, then notify via `ctx.ui.notify(...)`.
+- Wire `gcc_commit` tool execution to both:
+  - call `executeGccCommit(...)` (returns log contents for agent distillation)
+  - call `commitFlow.setPendingCommit(params.summary)` to arm step 2 extraction in `agent_end`
+- Wire `session_start`: create/load `state` and `branchManager` using `ctx.cwd`; show current GCC status via `ctx.ui.notify`.
+- Wire `session_shutdown`: if initialized, check for uncommitted turns and notify user.
+- Wire `session_before_compact`: if initialized, append a GCC state reminder to `event.customInstructions` (do not cancel/override compaction).
+- Wire `resources_discover`: return GCC skill path using ESM-safe path resolution (`fileURLToPath(import.meta.url)` + `path.dirname(...)`), not `__dirname`.
 
 > **Deferred: Session tracking.** The spec originally called for `session_start` to register sessions in `state.yaml`. This is deferred for v1 because the YAML parser does not support lists and no tool or hook depends on session tracking data. The `session_start` hook should only check for `.gcc/` and display a notification with current GCC state — no state.yaml writes.
 

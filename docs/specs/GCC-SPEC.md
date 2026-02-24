@@ -199,13 +199,13 @@ All tools are agent-driven. The agent provides all summaries, names, and content
 
 1. Read the current branch's `log.md` (all OTA entries since last commit)
 2. Return log contents to the agent
-3. Agent provides the three-block commit entry (branch purpose, progress summary, this contribution)
-4. Extension appends the entry to `commits.md` with a generated hash and timestamp
+3. Agent provides the three-block commit entry (branch purpose, progress summary, this contribution) in its next assistant response
+4. Extension captures that response in the `agent_end` hook and appends the entry to `commits.md` with a generated hash and timestamp
 5. Extension clears `log.md` for the next cycle
 6. If `update_roadmap` is true, agent is prompted to revise `main.md`
 7. Extension updates the root `AGENTS.md` GCC section with latest milestone
 
-**Returns:** The current log.md contents so the agent can distill them into the commit. After the agent provides its commit content (via a follow-up call or structured response), the extension writes the entry and resets the log.
+**Returns:** The current log.md contents so the agent can distill them into the commit. After the agent provides its commit content, the extension finalizes the commit in `agent_end` and resets the log (no additional follow-up agent turn required).
 
 ### 4.2 `gcc_branch`
 
@@ -415,11 +415,98 @@ When a pi session ends:
 
 ### 6.5 `session_before_compact` — Compaction Awareness
 
-Before pi compacts the session:
+Before pi compacts the session, the extension can inject GCC context into the compaction's `customInstructions` so the compaction summary preserves GCC orientation:
 
-1. Check if there are uncommitted OTA entries
-2. The log.md already captures the reasoning externally, so compaction doesn't lose GCC-relevant detail
-3. Optionally inject a note into the compaction summary mentioning GCC state ("GCC: 8 uncommitted turns on branch 'main', see .gcc/branches/main/log.md")
+```typescript
+SessionBeforeCompactEvent = {
+  type: "session_before_compact";
+  preparation: CompactionPreparation;
+  customInstructions?: string;
+  signal: AbortSignal;
+}
+
+SessionBeforeCompactResult = {
+  cancel?: boolean;
+  compaction?: CompactionResult;
+}
+```
+
+The extension:
+
+1. If GCC is not initialized, skip (return nothing).
+2. Does NOT cancel or override compaction.
+3. Injects a custom instruction string by appending to `event.customInstructions`:
+   `"GCC memory system active on branch '<name>'. N uncommitted turns in .gcc/branches/<name>/log.md. Latest commit: <summary>."`
+   This helps the compaction summary retain awareness of GCC state.
+
+> **Note:** The extension does not provide a custom `compaction` result and does not cancel compaction. It only mutates `event.customInstructions` (when present) to add a GCC reminder.
+
+### 6.6 `resources_discover` — Skill Registration
+
+After `session_start`, pi fires `resources_discover` to collect additional resource paths:
+
+```typescript
+ResourcesDiscoverEvent = {
+  type: "resources_discover";
+  cwd: string;
+  reason: "startup" | "reload";
+}
+
+ResourcesDiscoverResult = {
+  skillPaths?: string[];
+  promptPaths?: string[];
+  themePaths?: string[];
+}
+```
+
+The extension returns `{ skillPaths: [gccSkillDir] }` where `gccSkillDir` is resolved relative to the extension's source file using `import.meta.url` (not `__dirname`, which is unavailable in ESM).
+
+### 6.7 State Lifecycle
+
+The extension manages shared state (`GccState`, `BranchManager`, `CommitFlowManager`) across all hooks and tools:
+
+- **Module-level variables:** `let state: GccState | null`, `let branches: BranchManager | null`, `const commitFlow = new CommitFlowManager()`. Initialized to `null`.
+- **`session_start`:** Creates `GccState` and `BranchManager` using `ctx.cwd`. Calls `state.load()`. If `.gcc/` exists and state is initialized, shows a notification. If `.gcc/` doesn't exist, state remains with `isInitialized === false`.
+- **`resources_discover`:** Does not depend on state. Returns skill paths unconditionally.
+- **Tools:** Guard with an error message if `state` is null or `state.isInitialized` is false (e.g., `"GCC not initialized. Run the gcc-init.sh script first."`).
+- **`before_agent_start` / `turn_end` / `agent_end`:** Skip silently (return `undefined`) if `state` is null or not initialized.
+- **`session_shutdown`:** Skip silently if state is null.
+
+### 6.8 Commit Flow Integration
+
+The 2-step commit flow spans the `gcc_commit` tool and the `agent_end` hook:
+
+1. **`gcc_commit` tool execute:** Calls `executeGccCommit(params, state, branches)` to get log content. Also calls `commitFlow.setPendingCommit(params.summary)` to arm the flow. Returns log content to the agent.
+2. **Agent responds** with the three commit blocks (`### Branch Purpose`, etc.).
+3. **`agent_end` hook:** Calls `commitFlow.handleAgentEnd(event.messages)`. If it returns `{ summary, commitContent }`, calls `finalizeGccCommit(summary, commitContent, state, branches, projectDir)` to write the commit.
+4. **Notification:** After finalization, calls `ctx.ui.notify("GCC commit written: <hash>", "info")` to inform the user. Does NOT use `pi.sendMessage({ deliverAs: "followUp" })` because the agent has already finished — a follow-up message would trigger an unnecessary extra turn. A UI notification is sufficient.
+
+### 6.9 Tool Execute Wrapper Pattern
+
+All tool functions (`executeGccCommit`, `executeGccBranch`, etc.) return plain `string` results. The `registerTool` execute handler wraps them:
+
+```typescript
+execute: async (_toolCallId, params, _signal, _onUpdate, ctx) => ({
+  content: [
+    { type: "text", text: toolFunction(params, state, branches, ctx.cwd) },
+  ],
+  details: {},
+});
+```
+
+### 6.10 ESM Path Resolution
+
+This project uses ESM (`"type": "module"`). `__dirname` is not available. Use:
+
+```typescript
+import { fileURLToPath } from "node:url";
+import * as path from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+```
+
+This applies to `resources_discover` when resolving the `skills/gcc` directory path.
 
 ---
 
