@@ -61,13 +61,13 @@ describe("integration", () => {
         })
       );
 
-      const commitPrep = executeGccCommit(
+      const commitResult = executeGccCommit(
         { summary: "Implemented hook extractor modules" },
         state,
         branches
       );
-      expect(commitPrep).toContain("Commit Preparation");
-      expect(commitPrep).toContain("OTA entries since last commit: 1 turns");
+      expect(commitResult.task).toContain('branch "phase-3-hooks"');
+      expect(commitResult.task).toContain("Implemented hook extractor modules");
 
       const finalizeResult = finalizeGccCommit(
         "Implemented hook extractor modules",

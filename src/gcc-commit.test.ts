@@ -31,7 +31,7 @@ describe("executeGccCommit", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("returns log contents for agent distillation", () => {
+  it("returns task string with branch name and summary", () => {
     branches.appendLog(
       "main",
       "## Turn 1 | 2026-02-22 | anthropic/claude\n\nDid some reasoning.\n"
@@ -43,19 +43,21 @@ describe("executeGccCommit", () => {
       branches
     );
 
-    expect(result).toContain("Turn 1");
-    expect(result).toContain("Did some reasoning.");
-    expect(result).toContain("First milestone");
+    expect(result.task).toContain('branch "main"');
+    expect(result.task).toContain("First milestone");
+    expect(result.task).toContain(".gcc/branches/main/log.md");
+    expect(result.task).toContain(".gcc/branches/main/commits.md");
+    expect(result.task).toContain(".gcc/AGENTS.md");
   });
 
-  it("returns message when log is empty", () => {
+  it("returns task even when log has no entries", () => {
     const result = executeGccCommit(
       { summary: "Empty commit" },
       state,
       branches
     );
 
-    expect(result).toContain("No log entries");
+    expect(result.task).toContain('branch "main"');
   });
 });
 

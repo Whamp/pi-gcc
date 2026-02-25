@@ -1,6 +1,7 @@
 import type { BranchManager } from "./branches.js";
 import { generateHash } from "./hash.js";
 import type { GccState } from "./state.js";
+import { buildCommitterTask } from "./subagent.js";
 
 interface GccCommitParams {
   summary: string;
@@ -8,53 +9,19 @@ interface GccCommitParams {
 }
 
 /**
- * Step 1: Read log.md and return it to the agent for distillation.
- * The agent uses this content to write the three-block commit entry.
+ * Build the subagent task string for commit distillation.
+ * The subagent reads log.md and commits.md itself.
  */
 export function executeGccCommit(
   params: GccCommitParams,
   state: GccState,
-  branches: BranchManager
-): string {
+  _branches: BranchManager
+): { task: string } {
   const branch = state.activeBranch;
-  const log = branches.readLog(branch);
-  const turnCount = branches.getLogTurnCount(branch);
 
-  if (!log.trim()) {
-    return [
-      `No log entries since last commit on branch "${branch}".`,
-      "",
-      "You can still commit if you have meaningful progress to record.",
-      `Summary: ${params.summary}`,
-      "",
-      "Please provide the commit content with three blocks:",
-      "### Branch Purpose",
-      "### Previous Progress Summary",
-      "### This Commit's Contribution",
-    ].join("\n");
-  }
-
-  const latestCommit = branches.getLatestCommit(branch);
-  const previousContext = latestCommit
-    ? `\n\n## Previous Commit (for rolling summary):\n\n${latestCommit}`
-    : "";
-
-  return [
-    `## Commit Preparation — Branch: ${branch}`,
-    "",
-    `Summary: ${params.summary}`,
-    `OTA entries since last commit: ${turnCount} turns`,
-    "",
-    "## Log Contents (distill into commit):",
-    "",
-    log,
-    previousContext,
-    "",
-    "Please provide the commit content with three blocks:",
-    "### Branch Purpose",
-    "### Previous Progress Summary",
-    "### This Commit's Contribution",
-  ].join("\n");
+  return {
+    task: buildCommitterTask(branch, params.summary),
+  };
 }
 
 /**

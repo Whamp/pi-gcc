@@ -129,7 +129,7 @@ describe("extensionWiring", () => {
     const handlerNames = mockPi.handlers.map((h) => h.event);
     expect(handlerNames).toContain("turn_end");
     expect(handlerNames).not.toContain("before_agent_start");
-    expect(handlerNames).toContain("agent_end");
+    expect(handlerNames).not.toContain("agent_end");
     expect(handlerNames).toContain("session_start");
     expect(handlerNames).not.toContain("session_shutdown");
     expect(handlerNames).toContain("session_before_compact");
@@ -263,7 +263,7 @@ describe("extensionWiring", () => {
     expect(result?.skillPaths?.[0]).toContain("skills/gcc");
   });
 
-  it("finalizes pending commit on agent_end and notifies the user", async () => {
+  it("gcc_commit returns error when subagent fails", async () => {
     const { projectDir, cleanup } = setupInitializedProject();
     try {
       const mockPi = createMockPi();
@@ -274,7 +274,7 @@ describe("extensionWiring", () => {
         cwd: projectDir,
         ui,
         sessionManager: {
-          getSessionFile: () => "/tmp/pi-session-finalize.jsonl",
+          getSessionFile: () => "/tmp/pi-session-commit-fail.jsonl",
         },
       } as unknown as ExtensionContext;
 
@@ -284,69 +284,21 @@ describe("extensionWiring", () => {
       const gccCommit = mockPi.tools.find((t) => t.name === "gcc_commit");
       expect(gccCommit).toBeDefined();
 
-      const commitPrep = await gccCommit?.execute(
+      // Abort immediately so the spawned pi process is killed quickly
+      const controller = new AbortController();
+      controller.abort();
+
+      const result = await gccCommit?.execute(
         "tc-commit",
-        { summary: "Checkpoint phase 3" },
-        undefined,
+        { summary: "Test commit" },
+        controller.signal,
         undefined,
         ctx
       );
-      expect(getFirstText(commitPrep)).toContain("Commit Preparation");
 
-      const agentEnd = getHandler(mockPi.handlers, "agent_end");
-      expect(agentEnd).toBeDefined();
-
-      await agentEnd?.(
-        {
-          type: "agent_end",
-          messages: [
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "text",
-                  text: [
-                    "### Branch Purpose",
-                    "Build GCC extension.",
-                    "",
-                    "### Previous Progress Summary",
-                    "Phase 1 and 2 complete.",
-                    "",
-                    "### This Commit's Contribution",
-                    "Implemented hook extractors.",
-                  ].join("\n"),
-                },
-              ],
-            },
-          ],
-        },
-        ctx
-      );
-
-      const commitsPath = path.join(
-        projectDir,
-        ".gcc",
-        "branches",
-        "main",
-        "commits.md"
-      );
-      const commits = fs.readFileSync(commitsPath, "utf8");
-      expect(commits).toContain("### Branch Purpose");
-      expect(commits).toContain("Implemented hook extractors.");
-
-      const logPath = path.join(
-        projectDir,
-        ".gcc",
-        "branches",
-        "main",
-        "log.md"
-      );
-      const log = fs.readFileSync(logPath, "utf8");
-      expect(log).toBe("");
-
-      expect(
-        ui.notifications.some((n) => n.message.includes("Commit"))
-      ).toBeTruthy();
+      // Should return an AgentToolResult with error text, not throw
+      expect(result?.content[0]?.type).toBe("text");
+      expect(result?.details).toStrictEqual({});
     } finally {
       cleanup();
     }

@@ -10,7 +10,6 @@ import type {
 import { Type } from "@sinclair/typebox";
 
 import { BranchManager } from "./branches.js";
-import { CommitFlowManager } from "./commit-flow.js";
 import { executeGccBranch } from "./gcc-branch.js";
 import { executeGccCommit, finalizeGccCommit } from "./gcc-commit.js";
 import { executeGccContext } from "./gcc-context.js";
@@ -19,6 +18,7 @@ import { executeGccSwitch } from "./gcc-switch.js";
 import { formatOtaEntry } from "./ota-formatter.js";
 import { extractOtaInput } from "./ota-logger.js";
 import { GccState } from "./state.js";
+import { extractCommitBlocks, spawnCommitter } from "./subagent.js";
 
 const GCC_NOT_INITIALIZED_MESSAGE =
   "GCC not initialized. Run gcc-init.sh first.";
@@ -84,7 +84,6 @@ function resolveSkillPath(): string {
 export default function activate(pi: ExtensionAPI) {
   let state: GccState | null = null;
   let branchManager: BranchManager | null = null;
-  const commitFlow = new CommitFlowManager();
 
   pi.registerTool({
     name: "gcc_context",
@@ -181,14 +180,36 @@ export default function activate(pi: ExtensionAPI) {
       summary: Type.String({ description: "Short summary of this checkpoint" }),
       update_roadmap: Type.Optional(Type.Boolean()),
     }),
-    async execute(_toolCallId, params) {
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       if (!isGccReady(state, branchManager) || !branchManager) {
         return createTextResult(GCC_NOT_INITIALIZED_MESSAGE);
       }
 
-      commitFlow.setPendingCommit(params.summary);
+      const { task } = executeGccCommit(params, state, branchManager);
 
-      return createTextResult(executeGccCommit(params, state, branchManager));
+      const result = await spawnCommitter(ctx.cwd, task, signal);
+
+      if (result.exitCode !== 0 || result.error) {
+        return createTextResult(
+          `Commit failed: ${result.error ?? "subagent exited with non-zero code"}`
+        );
+      }
+
+      const commitContent = extractCommitBlocks(result.text);
+      if (!commitContent) {
+        return createTextResult(
+          "Commit failed: could not extract commit blocks from subagent response."
+        );
+      }
+
+      const message = finalizeGccCommit(
+        params.summary,
+        commitContent,
+        state,
+        branchManager
+      );
+
+      return createTextResult(message);
     },
   });
 
@@ -226,25 +247,6 @@ export default function activate(pi: ExtensionAPI) {
 
     const entry = formatOtaEntry(input);
     branchManager.appendLog(state.activeBranch, entry);
-  });
-
-  pi.on("agent_end", (event, ctx) => {
-    if (!isGccReady(state, branchManager) || !branchManager) {
-      return;
-    }
-
-    const commitResult = commitFlow.handleAgentEnd(event.messages);
-    if (!commitResult) {
-      return;
-    }
-
-    const message = finalizeGccCommit(
-      commitResult.summary,
-      commitResult.commitContent,
-      state,
-      branchManager
-    );
-    ctx.ui.notify(message, "info");
   });
 
   pi.on("session_before_compact", (event) => {

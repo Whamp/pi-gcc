@@ -14,3 +14,9 @@ export interface GccContextParams {
   commit?: string;
   segment?: string;
 }
+
+export interface SubagentResult {
+  text: string;
+  exitCode: number;
+  error?: string;
+}
