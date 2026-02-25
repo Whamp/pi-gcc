@@ -40,7 +40,7 @@
     "secrets": "gitleaks detect --source . --no-git",
     "check": "bash scripts/check.sh",
     "fix": "bash scripts/fix.sh",
-    "prepare": "husky"
+    "prepare": "node -e \"try{require.resolve('husky')}catch(e){process.exit(0)}\" && husky"
   },
   "devDependencies": {
     "@mariozechner/pi-coding-agent": "^0.54.2",

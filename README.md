@@ -44,7 +44,7 @@ pi -e git:github.com/Whamp/pi-gcc
 ```bash
 git clone https://github.com/Whamp/pi-gcc.git
 cd pi-gcc
-pnpm install
+pnpm install --prod=false    # .npmrc omits dev deps by default
 pnpm run check
 
 # Run pi with the extension loaded from source
