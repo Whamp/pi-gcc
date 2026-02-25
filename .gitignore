@@ -7,3 +7,5 @@ dist/
 .DS_Store
 coverage/
 .worktrees/
+
+.gcc/branches/*/log.md
