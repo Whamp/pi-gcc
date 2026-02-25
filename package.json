@@ -1,7 +1,32 @@
 {
   "name": "pi-gcc",
   "version": "0.1.0",
-  "private": true,
+  "description": "GCC (Git Context Controller) memory extension for pi coding agent",
+  "keywords": [
+    "context",
+    "gcc",
+    "memory",
+    "pi",
+    "pi-coding-agent",
+    "pi-package"
+  ],
+  "homepage": "https://github.com/Whamp/pi-gcc#readme",
+  "bugs": {
+    "url": "https://github.com/Whamp/pi-gcc/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Whamp/pi-gcc.git"
+  },
+  "files": [
+    "src/",
+    "!src/**/*.test.ts",
+    "skills/",
+    "agents/",
+    "package.json",
+    "README.md"
+  ],
   "type": "module",
   "scripts": {
     "lint": "oxlint -c .oxlintrc.json",
@@ -17,9 +42,6 @@
     "fix": "bash scripts/fix.sh",
     "prepare": "husky"
   },
-  "dependencies": {
-    "@sinclair/typebox": "^0.34.48"
-  },
   "devDependencies": {
     "@mariozechner/pi-coding-agent": "^0.54.2",
     "@types/node": "^25.3.0",
@@ -34,6 +56,10 @@
     "ultracite": "^7.2.3",
     "vitest": "^4.0.18"
   },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@sinclair/typebox": "*"
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
@@ -42,6 +68,9 @@
   "pi": {
     "extensions": [
       "./src/index.ts"
+    ],
+    "skills": [
+      "./skills"
     ]
   }
 }
