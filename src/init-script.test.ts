@@ -17,9 +17,11 @@ describe("gcc-init.sh", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("creates the .gcc directory structure", () => {
+  it("should create the .gcc directory structure", () => {
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     expect(fs.existsSync(path.join(tmpDir, ".gcc/state.yaml"))).toBeTruthy();
     expect(fs.existsSync(path.join(tmpDir, ".gcc/AGENTS.md"))).toBeTruthy();
     expect(fs.existsSync(path.join(tmpDir, ".gcc/main.md"))).toBeTruthy();
@@ -34,17 +36,21 @@ describe("gcc-init.sh", () => {
     ).toBeTruthy();
   });
 
-  it("writes correct state.yaml with active_branch: main", () => {
+  it("should write correct state.yaml with active_branch: main", () => {
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     const state = fs.readFileSync(path.join(tmpDir, ".gcc/state.yaml"), "utf8");
     expect(state).toContain("active_branch: main");
     expect(state).toContain("initialized:");
   });
 
-  it("creates root AGENTS.md with static GCC section", () => {
+  it("should create root AGENTS.md with static GCC section", () => {
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
     expect(agents).toContain("## GCC");
     expect(agents).toContain(
@@ -53,55 +59,65 @@ describe("gcc-init.sh", () => {
     expect(agents).not.toContain("Current branch:");
   });
 
-  it("appends to existing AGENTS.md without duplicating", () => {
+  it("should append to existing AGENTS.md without duplicating", () => {
+    // Arrange
     fs.writeFileSync(
       path.join(tmpDir, "AGENTS.md"),
       "# My Project\n\nExisting content.\n"
     );
 
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
     expect(agents).toContain("# My Project");
     expect(agents).toContain("Existing content.");
     expect(agents).toContain("## GCC");
   });
 
-  it("is idempotent — running twice does not duplicate GCC section", () => {
+  it("should be idempotent — running twice does not duplicate GCC section", () => {
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
     const gccMatches = agents.match(/## GCC/g);
     expect(gccMatches?.length).toBe(1);
   });
 
-  it("does not overwrite existing .gcc files on second run", () => {
+  it("should not overwrite existing .gcc files on second run", () => {
+    // Arrange
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
-
-    // Modify state to simulate usage
     const statePath = path.join(tmpDir, ".gcc/state.yaml");
     const originalState = fs.readFileSync(statePath, "utf8");
     fs.writeFileSync(statePath, `${originalState}\nmodified: true`);
 
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     const stateAfter = fs.readFileSync(statePath, "utf8");
     expect(stateAfter).toContain("modified: true");
   });
 
-  it("adds log.md pattern to .gitignore idempotently", () => {
+  it("should add log.md pattern to .gitignore idempotently", () => {
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     const gitignore = fs.readFileSync(path.join(tmpDir, ".gitignore"), "utf8");
     const matches = gitignore.match(/^\.gcc\/branches\/\*\/log\.md$/gm);
     expect(matches?.length).toBe(1);
   });
 
-  it("writes .gcc/AGENTS.md with protocol reference", () => {
+  it("should write .gcc/AGENTS.md with protocol reference", () => {
+    // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
+    // Assert
     const gccAgents = fs.readFileSync(
       path.join(tmpDir, ".gcc/AGENTS.md"),
       "utf8"

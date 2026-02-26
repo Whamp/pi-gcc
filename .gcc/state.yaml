@@ -9,3 +9,9 @@ sessions:
   - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-gcc--/2026-02-25T20-34-45-614Z_282b30df-0407-4f3f-bba9-cf6cf15c1478.jsonl"
     branch: main
     started: "2026-02-25T20:42:03.644Z"
+  - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-gcc--/2026-02-26T00-00-36-152Z_883ba6f3-3317-48c1-929d-280147df49f1.jsonl"
+    branch: main
+    started: "2026-02-26T00:00:36.170Z"
+  - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-gcc--/2026-02-26T00-01-26-241Z_969837d1-320b-4122-9962-0ce3f2c2d9b7.jsonl"
+    branch: main
+    started: "2026-02-26T00:01:26.258Z"

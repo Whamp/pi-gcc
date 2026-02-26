@@ -32,13 +32,17 @@ describe("executeGccMerge", () => {
     const entry =
       "\n---\n\n## Commit a1b2c3d4 | 2026-02-22\n\n### Branch Purpose\n\nEvaluate Redis\n\n### This Commit's Contribution\n\nRedis is viable for our use case.\n";
     branches.appendCommit("explore-redis", entry);
+
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("appends a merge commit to the current branch", () => {
+  it("should append a merge commit to the current branch", () => {
+    // Act
     const result = executeGccMerge(
       {
         branch: "explore-redis",
@@ -49,76 +53,93 @@ describe("executeGccMerge", () => {
       branches
     );
 
+    // Assert
     expect(result).toContain("Merge commit");
     const commits = branches.readCommits("main");
     expect(commits).toContain("Merge from explore-redis");
     expect(commits).toContain("Redis confirmed as caching layer");
   });
 
-  it("generates a valid hash in the merge commit", () => {
+  it("should generate a valid hash in the merge commit", () => {
+    // Act
     executeGccMerge(
       { branch: "explore-redis", synthesis: "Redis is good." },
       state,
       branches
     );
 
+    // Assert
     const commits = branches.readCommits("main");
     const hashMatch = /## Commit ([a-f0-9]{8})/.exec(commits);
     expect(hashMatch).not.toBeNull();
   });
 
-  it("updates state with last commit info", () => {
+  it("should update state with last commit info", () => {
+    vi.setSystemTime(new Date("2026-02-22T16:00:00.000Z"));
+
+    // Act
     executeGccMerge(
       { branch: "explore-redis", synthesis: "Merged Redis findings." },
       state,
       branches
     );
 
+    // Assert
     expect(state.lastCommit).not.toBeNull();
     expect(state.lastCommit?.branch).toBe("main");
     expect(state.lastCommit?.summary).toContain("Merge from explore-redis");
+    expect(state.lastCommit?.timestamp).toBeDefined();
   });
 
-  it("does not modify root AGENTS.md during merge", () => {
+  it("should not modify root AGENTS.md during merge", () => {
+    // Arrange
     const before = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
 
+    // Act
     executeGccMerge(
       { branch: "explore-redis", synthesis: "Merged." },
       state,
       branches
     );
 
+    // Assert
     const after = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
     expect(after).toBe(before);
   });
 
-  it("retains the merged branch (does not delete)", () => {
+  it("should retain the merged branch (does not delete)", () => {
+    // Act
     executeGccMerge(
       { branch: "explore-redis", synthesis: "Done." },
       state,
       branches
     );
 
+    // Assert
     expect(branches.branchExists("explore-redis")).toBeTruthy();
   });
 
-  it("rejects merging a branch into itself", () => {
+  it("should reject merging a branch into itself", () => {
+    // Act
     const result = executeGccMerge(
       { branch: "main", synthesis: "Self merge." },
       state,
       branches
     );
 
+    // Assert
     expect(result).toContain("Cannot merge");
   });
 
-  it("rejects merging a nonexistent branch", () => {
+  it("should reject merging a nonexistent branch", () => {
+    // Act
     const result = executeGccMerge(
       { branch: "nonexistent", synthesis: "Missing." },
       state,
       branches
     );
 
+    // Assert
     expect(result).toContain("not found");
   });
 });

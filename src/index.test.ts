@@ -11,6 +11,8 @@ import type {
 
 import activate from "./index.js";
 
+// Helpers
+
 interface RegisteredHandler {
   event: string;
   handler: (event: unknown, ctx: ExtensionContext) => unknown;
@@ -114,10 +116,14 @@ function getFirstText(result: AgentToolResult<unknown> | undefined): string {
 }
 
 describe("extensionWiring", () => {
-  it("registers all GCC tools and required event handlers", () => {
+  it("should register all GCC tools and required event handlers", () => {
+    // Arrange
     const mockPi = createMockPi();
+
+    // Act
     activate(mockPi.api);
 
+    // Assert
     const toolNames = mockPi.tools.map((t) => t.name);
     expect(toolNames).toHaveLength(5);
     expect(toolNames).toContain("gcc_branch");
@@ -136,7 +142,8 @@ describe("extensionWiring", () => {
     expect(handlerNames).toContain("resources_discover");
   });
 
-  it("returns tool result shape and guards when GCC is uninitialized", async () => {
+  it("should return tool result shape and guard when GCC is uninitialized", async () => {
+    // Arrange
     const mockPi = createMockPi();
     activate(mockPi.api);
 
@@ -153,6 +160,7 @@ describe("extensionWiring", () => {
       const gccContext = mockPi.tools.find((t) => t.name === "gcc_context");
       expect(gccContext).toBeDefined();
 
+      // Act
       const result = await gccContext?.execute(
         "tc1",
         { level: "status" },
@@ -161,6 +169,7 @@ describe("extensionWiring", () => {
         ctx
       );
 
+      // Assert
       expect(result?.content[0]?.type).toBe("text");
       expect(result?.details).toStrictEqual({});
       expect(getFirstText(result)).toContain("GCC not initialized");
@@ -169,7 +178,8 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("registers session file in state.yaml on session_start", async () => {
+  it("should register session file in state.yaml on session_start", async () => {
+    // Arrange
     const { projectDir, cleanup } = setupInitializedProject();
     try {
       const mockPi = createMockPi();
@@ -185,9 +195,12 @@ describe("extensionWiring", () => {
       } as unknown as ExtensionContext;
 
       const sessionStart = getHandler(mockPi.handlers, "session_start");
+
+      // Act
       await sessionStart?.({ type: "session_start" }, ctx);
       await sessionStart?.({ type: "session_start" }, ctx);
 
+      // Assert
       const stateYaml = fs.readFileSync(
         path.join(projectDir, ".gcc", "state.yaml"),
         "utf8"
@@ -202,13 +215,13 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("shows warning notification when log.md exceeds size threshold", async () => {
+  it("should show warning notification when log.md exceeds size threshold", async () => {
+    // Arrange
     const { projectDir, cleanup } = setupInitializedProject();
     try {
       const mockPi = createMockPi();
       activate(mockPi.api);
 
-      // Write a large log.md
       const logPath = path.join(
         projectDir,
         ".gcc",
@@ -228,8 +241,11 @@ describe("extensionWiring", () => {
       } as unknown as ExtensionContext;
 
       const sessionStart = getHandler(mockPi.handlers, "session_start");
+
+      // Act
       await sessionStart?.({ type: "session_start" }, ctx);
 
+      // Assert
       expect(ui.notifications).toHaveLength(1);
       expect(ui.notifications[0].type).toBe("warning");
       expect(ui.notifications[0].message).toContain("log.md is large");
@@ -239,7 +255,8 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("updates the active session branch mapping after gcc_branch", async () => {
+  it("should update the active session branch mapping after gcc_branch", async () => {
+    // Arrange
     const { projectDir, cleanup } = setupInitializedProject();
     try {
       const mockPi = createMockPi();
@@ -260,6 +277,7 @@ describe("extensionWiring", () => {
       const gccBranch = mockPi.tools.find((t) => t.name === "gcc_branch");
       expect(gccBranch).toBeDefined();
 
+      // Act
       await gccBranch?.execute(
         "tc-branch-sync",
         { name: "feature-x", purpose: "Investigate branch sync" },
@@ -268,6 +286,7 @@ describe("extensionWiring", () => {
         ctx
       );
 
+      // Assert
       const stateYaml = fs.readFileSync(
         path.join(projectDir, ".gcc", "state.yaml"),
         "utf8"
@@ -281,7 +300,8 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("discovers GCC skill path with ESM-safe resolution", async () => {
+  it("should discover GCC skill path with ESM-safe resolution", async () => {
+    // Arrange
     const mockPi = createMockPi();
     activate(mockPi.api);
 
@@ -291,16 +311,19 @@ describe("extensionWiring", () => {
     const ui = createMockUi();
     const ctx = { cwd: process.cwd(), ui } as unknown as ExtensionContext;
 
+    // Act
     const result = (await resourcesDiscover?.(
       { type: "resources_discover", cwd: process.cwd(), reason: "startup" },
       ctx
     )) as { skillPaths?: string[] } | undefined;
 
+    // Assert
     expect(result?.skillPaths?.length).toBe(1);
     expect(result?.skillPaths?.[0]).toContain("skills/gcc");
   });
 
-  it("lazily loads state when .gcc/ is created after session_start", async () => {
+  it("should lazily load state when .gcc/ is created after session_start", async () => {
+    // Arrange
     const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-lazy-init-"));
 
     try {
@@ -348,7 +371,7 @@ describe("extensionWiring", () => {
       );
       fs.writeFileSync(path.join(branchDir, "metadata.yaml"), "");
 
-      // Tool now lazily picks up the new state
+      // Act
       const after = await gccContext?.execute(
         "tc-lazy-after",
         {},
@@ -356,10 +379,11 @@ describe("extensionWiring", () => {
         undefined,
         ctx
       );
+
+      // Assert
       expect(getFirstText(after)).not.toContain("GCC not initialized");
       expect(getFirstText(after)).toContain("Active branch: main");
 
-      // Session should be registered in state.yaml
       const stateYaml = fs.readFileSync(
         path.join(projectDir, ".gcc", "state.yaml"),
         "utf8"
@@ -370,7 +394,8 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("gcc_commit returns error when subagent fails", async () => {
+  it("should return error from gcc_commit when subagent fails", async () => {
+    // Arrange
     const { projectDir, cleanup } = setupInitializedProject();
     try {
       const mockPi = createMockPi();
@@ -391,10 +416,10 @@ describe("extensionWiring", () => {
       const gccCommit = mockPi.tools.find((t) => t.name === "gcc_commit");
       expect(gccCommit).toBeDefined();
 
-      // Abort immediately so the spawned pi process is killed quickly
       const controller = new AbortController();
       controller.abort();
 
+      // Act
       const result = await gccCommit?.execute(
         "tc-commit",
         { summary: "Test commit" },
@@ -403,7 +428,7 @@ describe("extensionWiring", () => {
         ctx
       );
 
-      // Should return an AgentToolResult with error text, not throw
+      // Assert
       expect(result?.content[0]?.type).toBe("text");
       expect(result?.details).toStrictEqual({});
     } finally {

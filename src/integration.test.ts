@@ -10,7 +10,8 @@ import { formatOtaEntry } from "./ota-formatter.js";
 import { GccState } from "./state.js";
 
 describe("integration", () => {
-  it("connects state, branches, commit flow, and context retrieval", () => {
+  it("should connect state, branches, commit flow, and context retrieval", () => {
+    // Arrange
     const projectDir = fs.mkdtempSync(
       path.join(os.tmpdir(), "gcc-integration-")
     );
@@ -31,6 +32,7 @@ describe("integration", () => {
       const branches = new BranchManager(projectDir);
       branches.createBranch("main", "Main development branch");
 
+      // Act — create branch
       const branchResult = executeGccBranch(
         {
           name: "phase-3-hooks",
@@ -39,9 +41,12 @@ describe("integration", () => {
         state,
         branches
       );
+
+      // Assert — branch created
       expect(branchResult).toContain("phase-3-hooks");
       expect(state.activeBranch).toBe("phase-3-hooks");
 
+      // Act — append log and commit
       branches.appendLog(
         "phase-3-hooks",
         formatOtaEntry({
@@ -66,9 +71,12 @@ describe("integration", () => {
         state,
         branches
       );
+
+      // Assert — commit prepared
       expect(commitResult.task).toContain('branch "phase-3-hooks"');
       expect(commitResult.task).toContain("Implemented hook extractor modules");
 
+      // Act — finalize commit
       const finalizeResult = finalizeGccCommit(
         "Implemented hook extractor modules",
         [
@@ -85,12 +93,16 @@ describe("integration", () => {
         branches
       );
 
+      // Assert — commit finalized, log cleared
       expect(finalizeResult).toContain("Commit");
 
       const logAfterCommit = branches.readLog("phase-3-hooks");
       expect(logAfterCommit).toBe("");
 
+      // Act — retrieve context
       const statusView = executeGccContext({}, state, branches, projectDir);
+
+      // Assert — context contains commit info
       expect(statusView).toContain("phase-3-hooks");
       expect(statusView).toContain(
         "Added ota-logger/context-injector and verified behavior."

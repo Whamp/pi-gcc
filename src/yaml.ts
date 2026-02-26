@@ -11,8 +11,9 @@ const NEEDS_QUOTING = /[-:{}[\],&*?|>!%@`]|^\d{4}-\d{2}/;
 
 function unquote(value: string): string {
   if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
+    value.length >= 2 &&
+    ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'")))
   ) {
     return value.slice(1, -1);
   }
@@ -21,7 +22,12 @@ function unquote(value: string): string {
 }
 
 function quoteIfNeeded(value: string): string {
-  if (NEEDS_QUOTING.test(value)) {
+  if (
+    value === "" ||
+    value.trim() !== value ||
+    value.includes("'") ||
+    NEEDS_QUOTING.test(value)
+  ) {
     return `"${value}"`;
   }
 

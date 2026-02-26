@@ -32,26 +32,33 @@ describe("executeGccSwitch", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("switches to an existing branch", () => {
+  it("should switch to an existing branch", () => {
+    // Act
     const result = executeGccSwitch({ branch: "feature-x" }, state, branches);
 
+    // Assert
     expect(state.activeBranch).toBe("feature-x");
     expect(result).toContain("feature-x");
   });
 
-  it("returns latest commit summary for orientation", () => {
+  it("should return latest commit summary for orientation", () => {
+    // Arrange
     const entry =
       "\n---\n\n## Commit a1b2c3d4 | 2026-02-22\n\n### Branch Purpose\n\nExplore feature X\n\n### This Commit's Contribution\n\nDetermined Redis is viable.\n";
     branches.appendCommit("feature-x", entry);
 
+    // Act
     const result = executeGccSwitch({ branch: "feature-x" }, state, branches);
 
+    // Assert
     expect(result).toContain("Determined Redis is viable.");
   });
 
-  it("rejects switching to nonexistent branch", () => {
+  it("should reject switching to nonexistent branch", () => {
+    // Act
     const result = executeGccSwitch({ branch: "nope" }, state, branches);
 
+    // Assert
     expect(result).toContain("not found");
     expect(state.activeBranch).toBe("main");
   });

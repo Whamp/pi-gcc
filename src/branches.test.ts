@@ -21,29 +21,46 @@ describe("branchManager", () => {
   });
 
   describe("createBranch", () => {
-    it("creates log.md, commits.md, and metadata.yaml", () => {
+    it("should create log.md, commits.md, and metadata.yaml", () => {
+      // Act
       manager.createBranch("feature-x", "Explore feature X");
 
+      // Assert
       const branchDir = path.join(gccDir, "branches/feature-x");
       expect(fs.existsSync(path.join(branchDir, "log.md"))).toBeTruthy();
       expect(fs.existsSync(path.join(branchDir, "commits.md"))).toBeTruthy();
       expect(fs.existsSync(path.join(branchDir, "metadata.yaml"))).toBeTruthy();
     });
 
-    it("writes branch purpose into commits.md header", () => {
+    it("should write branch purpose into commits.md header", () => {
+      // Act
       manager.createBranch("feature-x", "Explore feature X");
 
+      // Assert
       const commits = fs.readFileSync(
         path.join(gccDir, "branches/feature-x/commits.md"),
         "utf8"
       );
       expect(commits).toContain("Explore feature X");
     });
+
+    it("should handle branch names with slashes", () => {
+      // Act
+      manager.createBranch("feature/auth", "Auth work");
+
+      // Assert
+      const branchDir = path.join(gccDir, "branches/feature/auth");
+      expect(fs.existsSync(branchDir)).toBeTruthy();
+      expect(manager.branchExists("feature/auth")).toBeTruthy();
+    });
   });
 
   describe("appendLog", () => {
-    it("appends content to the branch log.md", () => {
+    it("should append content to the branch log.md", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
+
+      // Act
       manager.appendLog(
         "main",
         "## Turn 1 | 2026-02-22 | anthropic/claude\n\nSome content\n"
@@ -53,6 +70,7 @@ describe("branchManager", () => {
         "## Turn 2 | 2026-02-22 | anthropic/claude\n\nMore content\n"
       );
 
+      // Assert
       const log = manager.readLog("main");
       expect(log).toContain("## Turn 1");
       expect(log).toContain("## Turn 2");
@@ -60,65 +78,82 @@ describe("branchManager", () => {
   });
 
   describe("appendCommit", () => {
-    it("appends a commit entry to commits.md", () => {
+    it("should append a commit entry to commits.md", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
       const entry =
         "---\n\n## Commit a1b2c3d4 | 2026-02-22\n\n### Branch Purpose\n\nMain branch\n";
+
+      // Act
       manager.appendCommit("main", entry);
 
+      // Assert
       const commits = manager.readCommits("main");
       expect(commits).toContain("## Commit a1b2c3d4");
     });
   });
 
   describe("readLog / readCommits", () => {
-    it("returns empty string if files are missing", () => {
+    it("should return empty string if files are missing", () => {
+      // Act + Assert
       expect(manager.readLog("nonexistent")).toBe("");
       expect(manager.readCommits("nonexistent")).toBe("");
     });
   });
 
   describe("clearLog", () => {
-    it("clears the log file", () => {
+    it("should clear the log file", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
       manager.appendLog("main", "## Turn 1\n\nSome content\n");
+
+      // Act
       manager.clearLog("main");
 
+      // Assert
       expect(manager.readLog("main")).toBe("");
     });
   });
 
   describe("listBranches", () => {
-    it("lists only directories in .gcc/branches/", () => {
+    it("should list only directories in .gcc/branches/", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
       manager.createBranch("feature-a", "Feature A");
-
-      // Create a stray file that should be ignored
       fs.writeFileSync(path.join(gccDir, "branches/.gitkeep"), "");
 
+      // Act
       const branches = manager.listBranches();
+
+      // Assert
       expect(branches).toContain("main");
       expect(branches).toContain("feature-a");
       expect(branches).not.toContain(".gitkeep");
     });
 
-    it("returns empty array if branches dir is missing", () => {
+    it("should return empty array if branches dir is missing", () => {
+      // Arrange
       fs.rmSync(path.join(gccDir, "branches"), { recursive: true });
+
+      // Act + Assert
       expect(manager.listBranches()).toStrictEqual([]);
     });
   });
 
   describe("getLogTurnCount", () => {
-    it("counts Turn header occurrences", () => {
+    it("should count Turn header occurrences", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
       manager.appendLog("main", "## Turn 1 | 2026-02-22 | model\n\nContent\n");
       manager.appendLog("main", "## Turn 2 | 2026-02-22 | model\n\nContent\n");
       manager.appendLog("main", "## Turn 3 | 2026-02-22 | model\n\nContent\n");
 
+      // Act + Assert
       expect(manager.getLogTurnCount("main")).toBe(3);
     });
 
-    it("returns 0 for empty or missing log", () => {
+    it("should return 0 for empty or missing log", () => {
+      // Act + Assert
       expect(manager.getLogTurnCount("nonexistent")).toBe(0);
       manager.createBranch("main", "Main branch");
       expect(manager.getLogTurnCount("main")).toBe(0);
@@ -126,44 +161,57 @@ describe("branchManager", () => {
   });
 
   describe("getLogSizeBytes", () => {
-    it("returns file size in bytes", () => {
+    it("should return file size in bytes", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
       manager.appendLog("main", "x".repeat(1000));
 
+      // Act + Assert
       expect(manager.getLogSizeBytes("main")).toBe(1000);
     });
 
-    it("returns 0 for missing branch", () => {
+    it("should return 0 for missing branch", () => {
+      // Act + Assert
       expect(manager.getLogSizeBytes("nonexistent")).toBe(0);
     });
 
-    it("returns 0 for empty log", () => {
+    it("should return 0 for empty log", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
+
+      // Act + Assert
       expect(manager.getLogSizeBytes("main")).toBe(0);
     });
   });
 
   describe("getLatestCommit", () => {
-    it("returns null for empty commits.md", () => {
+    it("should return null for empty commits.md", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
+
+      // Act + Assert
       expect(manager.getLatestCommit("main")).toBeNull();
     });
 
-    it("returns null for missing branch", () => {
+    it("should return null for missing branch", () => {
+      // Act + Assert
       expect(manager.getLatestCommit("nonexistent")).toBeNull();
     });
 
-    it("returns the last commit entry", () => {
+    it("should return the last commit entry", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
       const entry1 =
         "\n---\n\n## Commit aaaa1111 | 2026-02-22\n\n### Branch Purpose\n\nMain branch\n\n### This Commit's Contribution\n\nFirst commit\n";
       const entry2 =
         "\n---\n\n## Commit bbbb2222 | 2026-02-23\n\n### Branch Purpose\n\nMain branch\n\n### This Commit's Contribution\n\nSecond commit\n";
-
       manager.appendCommit("main", entry1);
       manager.appendCommit("main", entry2);
 
+      // Act
       const latest = manager.getLatestCommit("main");
+
+      // Assert
       expect(latest).not.toBeNull();
       expect(latest).toContain("bbbb2222");
       expect(latest).toContain("Second commit");
@@ -172,27 +220,36 @@ describe("branchManager", () => {
   });
 
   describe("branchExists", () => {
-    it("returns true for existing branches", () => {
+    it("should return true for existing branches", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
+
+      // Act + Assert
       expect(manager.branchExists("main")).toBeTruthy();
     });
 
-    it("returns false for non-existing branches", () => {
+    it("should return false for non-existing branches", () => {
+      // Act + Assert
       expect(manager.branchExists("nope")).toBeFalsy();
     });
   });
 
   describe("readMetadata", () => {
-    it("returns empty string for new branch", () => {
+    it("should return empty string for new branch", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
+
+      // Act + Assert
       expect(manager.readMetadata("main")).toBe("");
     });
 
-    it("returns raw text content", () => {
+    it("should return raw text content", () => {
+      // Arrange
       manager.createBranch("main", "Main branch");
       const metadataPath = path.join(gccDir, "branches/main/metadata.yaml");
       fs.writeFileSync(metadataPath, "file_structure:\n  src/: source code\n");
 
+      // Act + Assert
       expect(manager.readMetadata("main")).toBe(
         "file_structure:\n  src/: source code\n"
       );

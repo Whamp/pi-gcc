@@ -31,36 +31,42 @@ describe("executeGccBranch", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("creates a new branch and switches to it", () => {
+  it("should create a new branch and switch to it", () => {
+    // Act
     const result = executeGccBranch(
       { name: "explore-redis", purpose: "Evaluate Redis as a caching layer" },
       state,
       branches
     );
 
+    // Assert
     expect(result).toContain("explore-redis");
     expect(branches.branchExists("explore-redis")).toBeTruthy();
     expect(state.activeBranch).toBe("explore-redis");
   });
 
-  it("initializes commits.md with branch purpose", () => {
+  it("should initialize commits.md with branch purpose", () => {
+    // Act
     executeGccBranch(
       { name: "explore-redis", purpose: "Evaluate Redis as a caching layer" },
       state,
       branches
     );
 
+    // Assert
     const commits = branches.readCommits("explore-redis");
     expect(commits).toContain("Evaluate Redis as a caching layer");
   });
 
-  it("rejects duplicate branch names", () => {
+  it("should reject duplicate branch names", () => {
+    // Act
     const result = executeGccBranch(
       { name: "main", purpose: "Duplicate" },
       state,
       branches
     );
 
+    // Assert
     expect(result).toContain("already exists");
   });
 });

@@ -1,8 +1,22 @@
+import fc from "fast-check";
+
 import { formatOtaEntry } from "./ota-formatter.js";
 import type { OtaEntryInput } from "./ota-formatter.js";
 
+// Helpers
+
+const otaEntryArb = fc.record({
+  turnNumber: fc.integer({ min: 1 }),
+  timestamp: fc.string({ minLength: 1 }),
+  model: fc.string({ minLength: 1 }),
+  thought: fc.string(),
+  thinking: fc.string(),
+  actions: fc.array(fc.string({ minLength: 1 })),
+  observations: fc.array(fc.string({ minLength: 1 })),
+});
+
 describe("formatOtaEntry", () => {
-  it("formats a full turn with all fields", () => {
+  it("should format a full turn with all fields", () => {
     const input: OtaEntryInput = {
       turnNumber: 1,
       timestamp: "2026-02-22T14:00:00Z",
@@ -28,7 +42,7 @@ describe("formatOtaEntry", () => {
     );
   });
 
-  it("omits thinking block when empty", () => {
+  it("should omit thinking block when empty", () => {
     const input: OtaEntryInput = {
       turnNumber: 2,
       timestamp: "2026-02-22T14:01:00Z",
@@ -46,7 +60,7 @@ describe("formatOtaEntry", () => {
     expect(result).not.toContain("**Thinking**");
   });
 
-  it("omits action and observation when no tools called", () => {
+  it("should omit action and observation when no tools called", () => {
     const input: OtaEntryInput = {
       turnNumber: 3,
       timestamp: "2026-02-22T14:02:00Z",
@@ -65,7 +79,7 @@ describe("formatOtaEntry", () => {
     expect(result).not.toContain("**Observation**");
   });
 
-  it("ends with a trailing newline", () => {
+  it("should end with a trailing newline", () => {
     const input: OtaEntryInput = {
       turnNumber: 1,
       timestamp: "2026-02-22T14:00:00Z",
@@ -80,7 +94,7 @@ describe("formatOtaEntry", () => {
     expect(result.endsWith("\n")).toBeTruthy();
   });
 
-  it("handles actions with observations of differing lengths", () => {
+  it("should handle actions with observations of differing lengths", () => {
     const input: OtaEntryInput = {
       turnNumber: 4,
       timestamp: "2026-02-22T14:03:00Z",
@@ -95,5 +109,97 @@ describe("formatOtaEntry", () => {
 
     expect(result).toContain("**Action**: bash(pnpm test), edit(src/index.ts)");
     expect(result).toContain("**Observation**: bash: exit 0, all tests pass");
+  });
+});
+
+describe("formatOtaEntry property-based tests", () => {
+  it("should always start with ## Turn header", () => {
+    fc.assert(
+      fc.property(otaEntryArb, (input) => {
+        // Act
+        const result = formatOtaEntry(input);
+
+        // Assert
+        expect(result).toMatch(new RegExp(`^## Turn ${input.turnNumber} \\|`));
+      })
+    );
+  });
+
+  it("should always end with trailing newline", () => {
+    fc.assert(
+      fc.property(otaEntryArb, (input) => {
+        // Act
+        const result = formatOtaEntry(input);
+
+        // Assert
+        expect(result.endsWith("\n")).toBeTruthy();
+      })
+    );
+  });
+
+  it("should always contain **Thought** line", () => {
+    fc.assert(
+      fc.property(otaEntryArb, (input) => {
+        // Act
+        const result = formatOtaEntry(input);
+
+        // Assert
+        expect(result).toContain("**Thought**:");
+      })
+    );
+  });
+
+  it("should include **Thinking** iff thinking is non-empty", () => {
+    fc.assert(
+      fc.property(otaEntryArb, (input) => {
+        // Act
+        const result = formatOtaEntry(input);
+        const hasThinking = result.includes("**Thinking**:");
+
+        // Assert
+        expect(hasThinking).toBe(input.thinking !== "");
+      })
+    );
+  });
+
+  it("should include **Action** iff actions array is non-empty", () => {
+    fc.assert(
+      fc.property(otaEntryArb, (input) => {
+        // Act
+        const result = formatOtaEntry(input);
+        const hasAction = result.includes("**Action**:");
+
+        // Assert
+        expect(hasAction).toBe(input.actions.length > 0);
+      })
+    );
+  });
+
+  it("should include **Observation** iff observations array is non-empty", () => {
+    fc.assert(
+      fc.property(otaEntryArb, (input) => {
+        // Act
+        const result = formatOtaEntry(input);
+        const hasObs = result.includes("**Observation**:");
+
+        // Assert
+        expect(hasObs).toBe(input.observations.length > 0);
+      })
+    );
+  });
+
+  it("should include turn number, timestamp, and model in header", () => {
+    fc.assert(
+      fc.property(otaEntryArb, (input) => {
+        // Act
+        const result = formatOtaEntry(input);
+        const [headerLine] = result.split("\n");
+
+        // Assert
+        expect(headerLine).toContain(`Turn ${input.turnNumber}`);
+        expect(headerLine).toContain(input.timestamp);
+        expect(headerLine).toContain(input.model);
+      })
+    );
   });
 });
