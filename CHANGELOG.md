@@ -2,25 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
-## v0.1.1 (unreleased)
+## v0.1.1
 
-[compare changes](https://github.com/Whamp/pi-gcc/compare/v0.1.0...main)
+[compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.0...v0.1.1)
 
 ### 🚀 Enhancements
 
-- Wire gcc_commit to subagent-based commit distillation ([25471f5](https://github.com/Whamp/pi-gcc/commit/25471f5))
-- Lazy state init and log size warning at 600 KB ([55aed0f](https://github.com/Whamp/pi-gcc/commit/55aed0f))
+- Wire gcc_commit to subagent-based commit distillation ([25471f5](https://github.com/Whamp/pi-brain/commit/25471f5))
+- Lazy state init and log size warning at 600 KB ([55aed0f](https://github.com/Whamp/pi-brain/commit/55aed0f))
+
+### 💅 Refactors
+
+- Rename files from gcc to memory/brain ([9f0f4a7](https://github.com/Whamp/pi-brain/commit/9f0f4a7))
+- Rename GccState to MemoryState, GccContextParams to MemoryStatusParams ([2fe7e98](https://github.com/Whamp/pi-brain/commit/2fe7e98))
+- Update index.ts tool names, imports, and messages ([072a498](https://github.com/Whamp/pi-brain/commit/072a498))
+- Update function names, types, and path references in tool files ([b3cbdd1](https://github.com/Whamp/pi-brain/commit/b3cbdd1))
+- Update all source, test, skill, and template files for brain/memory naming ([c553e7e](https://github.com/Whamp/pi-brain/commit/c553e7e))
+- Complete rename to pi-brain with memory\_ tools and .memory/ directory ([0049e67](https://github.com/Whamp/pi-brain/commit/0049e67))
+- Rename pi-gcc to pi-brain ([09eb0f8](https://github.com/Whamp/pi-brain/commit/09eb0f8))
 
 ### 📖 Documentation
 
-- Add install instructions to README ([690a0b9](https://github.com/Whamp/pi-gcc/commit/690a0b9))
-- Refine SKILL.md for brownfield usage and post-init guidance ([000f7fd](https://github.com/Whamp/pi-gcc/commit/000f7fd))
-- Direct agents to .gcc/main.md for project orientation ([1f78bc4](https://github.com/Whamp/pi-gcc/commit/1f78bc4))
+- Refine SKILL.md for brownfield usage and post-init guidance ([000f7fd](https://github.com/Whamp/pi-brain/commit/000f7fd))
+- Direct agents to .gcc/main.md for project orientation ([1f78bc4](https://github.com/Whamp/pi-brain/commit/1f78bc4))
+- Update AGENTS.md and README.md for current runtime design ([c910f71](https://github.com/Whamp/pi-brain/commit/c910f71))
+- Simplify initialization instructions in README ([d559ea2](https://github.com/Whamp/pi-brain/commit/d559ea2))
+- Require /reload after gcc-init to activate tools ([2a87338](https://github.com/Whamp/pi-brain/commit/2a87338))
+- Rewrite README focused on simplicity and prompt cache safety ([81e2afa](https://github.com/Whamp/pi-brain/commit/81e2afa))
+- Add npm install instructions to README ([2446d31](https://github.com/Whamp/pi-brain/commit/2446d31))
 
 ### 🏡 Chore
 
-- Add .npmrc to skip dev deps and scripts for production installs ([c718329](https://github.com/Whamp/pi-gcc/commit/c718329))
-- Add .gcc/ project memory and gitignore log.md ([307ac9e](https://github.com/Whamp/pi-gcc/commit/307ac9e))
+- Add .gcc/ project memory and gitignore log.md ([307ac9e](https://github.com/Whamp/pi-brain/commit/307ac9e))
+- Add changelogen for automated changelog and release workflow ([943c189](https://github.com/Whamp/pi-brain/commit/943c189))
+
+### ❤️ Contributors
+
+- Will Hampson <will@ggl.slmail.me>
 
 ## v0.1.0
 
