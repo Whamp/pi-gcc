@@ -8,7 +8,7 @@ export interface OtaEntryInput {
   observations: string[];
 }
 
-export interface GccContextParams {
+export interface MemoryStatusParams {
   level?: string;
   branch?: string;
   commit?: string;

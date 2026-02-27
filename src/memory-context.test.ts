@@ -4,25 +4,25 @@ import * as path from "node:path";
 
 import { BranchManager } from "./branches.js";
 import { LOG_SIZE_WARNING_BYTES } from "./constants.js";
-import { executeGccContext } from "./gcc-context.js";
-import { GccState } from "./state.js";
+import { executeMemoryStatus } from "./memory-context.js";
+import { MemoryState } from "./state.js";
 
 // Helpers
 
-function setupGccProject(): {
+function setupMemoryProject(): {
   tmpDir: string;
-  state: GccState;
+  state: MemoryState;
   branches: BranchManager;
 } {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-context-test-"));
-  const gccDir = path.join(tmpDir, ".gcc");
-  fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-context-test-"));
+  const memoryDir = path.join(tmpDir, ".memory");
+  fs.mkdirSync(path.join(memoryDir, "branches"), { recursive: true });
 
-  const state = new GccState(tmpDir);
+  const state = new MemoryState(tmpDir);
   const branches = new BranchManager(tmpDir);
 
   fs.writeFileSync(
-    path.join(gccDir, "state.yaml"),
+    path.join(memoryDir, "state.yaml"),
     'active_branch: main\ninitialized: "2026-02-22T14:00:00Z"'
   );
   state.load();
@@ -32,13 +32,13 @@ function setupGccProject(): {
   return { tmpDir, state, branches };
 }
 
-describe("executeGccContext", () => {
+describe("executeMemoryStatus", () => {
   let tmpDir: string;
-  let state: GccState;
+  let state: MemoryState;
   let branches: BranchManager;
 
   beforeEach(() => {
-    const setup = setupGccProject();
+    const setup = setupMemoryProject();
     ({ tmpDir } = setup);
     ({ state } = setup);
     ({ branches } = setup);
@@ -51,7 +51,7 @@ describe("executeGccContext", () => {
   it("should return status overview when called with empty params", () => {
     // Arrange
     fs.writeFileSync(
-      path.join(tmpDir, ".gcc/main.md"),
+      path.join(tmpDir, ".memory/main.md"),
       "# Roadmap\n\nGoals here.\n"
     );
     branches.appendCommit(
@@ -60,21 +60,21 @@ describe("executeGccContext", () => {
     );
 
     // Act
-    const result = executeGccContext({}, state, branches, tmpDir);
+    const result = executeMemoryStatus({}, state, branches, tmpDir);
 
     // Assert
-    expect(result).toContain("# GCC Status");
+    expect(result).toContain("# Memory Status");
     expect(result).toContain("Roadmap");
     expect(result).toContain("Active branch: main");
     expect(result).toContain("Shipped milestone.");
     expect(result).toContain(
-      "Use `read .gcc/branches/<name>/commits.md` for full history."
+      "Use `read .memory/branches/<name>/commits.md` for full history."
     );
   });
 
   it("should handle missing main.md gracefully", () => {
     // Act
-    const result = executeGccContext({}, state, branches, tmpDir);
+    const result = executeMemoryStatus({}, state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("No roadmap found");
@@ -83,19 +83,19 @@ describe("executeGccContext", () => {
 
   it("should show guidance when main.md exists but is empty", () => {
     // Arrange
-    fs.writeFileSync(path.join(tmpDir, ".gcc/main.md"), "\n\n");
+    fs.writeFileSync(path.join(tmpDir, ".memory/main.md"), "\n\n");
 
     // Act
-    const result = executeGccContext({}, state, branches, tmpDir);
+    const result = executeMemoryStatus({}, state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("Roadmap is empty");
-    expect(result).toContain("Update `.gcc/main.md` with project goals");
+    expect(result).toContain("Update `.memory/main.md` with project goals");
   });
 
   it("should ignore unsupported level params and still return status", () => {
     // Act
-    const result = executeGccContext(
+    const result = executeMemoryStatus(
       { level: "branch", branch: "main", commit: "deadbeef", segment: "x" },
       state,
       branches,
@@ -103,19 +103,19 @@ describe("executeGccContext", () => {
     );
 
     // Assert
-    expect(result).toContain("# GCC Status");
+    expect(result).toContain("# Memory Status");
     expect(result).toContain(
-      "Use `read .gcc/branches/<name>/commits.md` for full history."
+      "Use `read .memory/branches/<name>/commits.md` for full history."
     );
   });
 
   it("should warn when log.md exceeds size threshold", () => {
     // Arrange
-    fs.writeFileSync(path.join(tmpDir, ".gcc/main.md"), "# Roadmap\n");
+    fs.writeFileSync(path.join(tmpDir, ".memory/main.md"), "# Roadmap\n");
     branches.appendLog("main", "x".repeat(LOG_SIZE_WARNING_BYTES + 1));
 
     // Act
-    const result = executeGccContext({}, state, branches, tmpDir);
+    const result = executeMemoryStatus({}, state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("**Warning:**");
@@ -125,11 +125,11 @@ describe("executeGccContext", () => {
 
   it("should not warn when log.md is below threshold", () => {
     // Arrange
-    fs.writeFileSync(path.join(tmpDir, ".gcc/main.md"), "# Roadmap\n");
+    fs.writeFileSync(path.join(tmpDir, ".memory/main.md"), "# Roadmap\n");
     branches.appendLog("main", "x".repeat(1000));
 
     // Act
-    const result = executeGccContext({}, state, branches, tmpDir);
+    const result = executeMemoryStatus({}, state, branches, tmpDir);
 
     // Assert
     expect(result).not.toContain("**Warning:**");
@@ -143,7 +143,7 @@ describe("executeGccContext", () => {
     branches.appendCommit("feature-a", entry);
 
     // Act
-    const result = executeGccContext({}, state, branches, tmpDir);
+    const result = executeMemoryStatus({}, state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("feature-a");

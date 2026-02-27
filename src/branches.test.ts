@@ -6,13 +6,13 @@ import { BranchManager } from "./branches.js";
 
 describe("branchManager", () => {
   let tmpDir: string;
-  let gccDir: string;
+  let memoryDir: string;
   let manager: BranchManager;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-branch-test-"));
-    gccDir = path.join(tmpDir, ".gcc");
-    fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-branch-test-"));
+    memoryDir = path.join(tmpDir, ".memory");
+    fs.mkdirSync(path.join(memoryDir, "branches"), { recursive: true });
     manager = new BranchManager(tmpDir);
   });
 
@@ -26,7 +26,7 @@ describe("branchManager", () => {
       manager.createBranch("feature-x", "Explore feature X");
 
       // Assert
-      const branchDir = path.join(gccDir, "branches/feature-x");
+      const branchDir = path.join(memoryDir, "branches/feature-x");
       expect(fs.existsSync(path.join(branchDir, "log.md"))).toBeTruthy();
       expect(fs.existsSync(path.join(branchDir, "commits.md"))).toBeTruthy();
       expect(fs.existsSync(path.join(branchDir, "metadata.yaml"))).toBeTruthy();
@@ -38,7 +38,7 @@ describe("branchManager", () => {
 
       // Assert
       const commits = fs.readFileSync(
-        path.join(gccDir, "branches/feature-x/commits.md"),
+        path.join(memoryDir, "branches/feature-x/commits.md"),
         "utf8"
       );
       expect(commits).toContain("Explore feature X");
@@ -49,7 +49,7 @@ describe("branchManager", () => {
       manager.createBranch("feature/auth", "Auth work");
 
       // Assert
-      const branchDir = path.join(gccDir, "branches/feature/auth");
+      const branchDir = path.join(memoryDir, "branches/feature/auth");
       expect(fs.existsSync(branchDir)).toBeTruthy();
       expect(manager.branchExists("feature/auth")).toBeTruthy();
     });
@@ -116,11 +116,11 @@ describe("branchManager", () => {
   });
 
   describe("listBranches", () => {
-    it("should list only directories in .gcc/branches/", () => {
+    it("should list only directories in .memory/branches/", () => {
       // Arrange
       manager.createBranch("main", "Main branch");
       manager.createBranch("feature-a", "Feature A");
-      fs.writeFileSync(path.join(gccDir, "branches/.gitkeep"), "");
+      fs.writeFileSync(path.join(memoryDir, "branches/.gitkeep"), "");
 
       // Act
       const branches = manager.listBranches();
@@ -133,7 +133,7 @@ describe("branchManager", () => {
 
     it("should return empty array if branches dir is missing", () => {
       // Arrange
-      fs.rmSync(path.join(gccDir, "branches"), { recursive: true });
+      fs.rmSync(path.join(memoryDir, "branches"), { recursive: true });
 
       // Act + Assert
       expect(manager.listBranches()).toStrictEqual([]);
@@ -246,7 +246,7 @@ describe("branchManager", () => {
     it("should return raw text content", () => {
       // Arrange
       manager.createBranch("main", "Main branch");
-      const metadataPath = path.join(gccDir, "branches/main/metadata.yaml");
+      const metadataPath = path.join(memoryDir, "branches/main/metadata.yaml");
       fs.writeFileSync(metadataPath, "file_structure:\n  src/: source code\n");
 
       // Act + Assert

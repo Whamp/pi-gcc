@@ -3,25 +3,25 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { BranchManager } from "./branches.js";
-import { executeGccCommit, finalizeGccCommit } from "./gcc-commit.js";
-import { GccState } from "./state.js";
+import { executeMemoryCommit, finalizeMemoryCommit } from "./memory-commit.js";
+import { MemoryState } from "./state.js";
 
-describe("executeGccCommit", () => {
+describe("executeMemoryCommit", () => {
   let tmpDir: string;
-  let state: GccState;
+  let state: MemoryState;
   let branches: BranchManager;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-commit-test-"));
-    const gccDir = path.join(tmpDir, ".gcc");
-    fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-commit-test-"));
+    const memoryDir = path.join(tmpDir, ".memory");
+    fs.mkdirSync(path.join(memoryDir, "branches"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       'active_branch: main\ninitialized: "2026-02-22T14:00:00Z"'
     );
 
-    state = new GccState(tmpDir);
+    state = new MemoryState(tmpDir);
     state.load();
     branches = new BranchManager(tmpDir);
     branches.createBranch("main", "Main branch");
@@ -39,7 +39,7 @@ describe("executeGccCommit", () => {
     );
 
     // Act
-    const result = executeGccCommit(
+    const result = executeMemoryCommit(
       { summary: "First milestone" },
       state,
       branches
@@ -48,14 +48,14 @@ describe("executeGccCommit", () => {
     // Assert
     expect(result.task).toContain('branch "main"');
     expect(result.task).toContain("First milestone");
-    expect(result.task).toContain(".gcc/branches/main/log.md");
-    expect(result.task).toContain(".gcc/branches/main/commits.md");
-    expect(result.task).toContain(".gcc/AGENTS.md");
+    expect(result.task).toContain(".memory/branches/main/log.md");
+    expect(result.task).toContain(".memory/branches/main/commits.md");
+    expect(result.task).toContain(".memory/AGENTS.md");
   });
 
   it("should return task even when log has no entries", () => {
     // Act
-    const result = executeGccCommit(
+    const result = executeMemoryCommit(
       { summary: "Empty commit" },
       state,
       branches
@@ -66,25 +66,25 @@ describe("executeGccCommit", () => {
   });
 });
 
-describe("finalizeGccCommit", () => {
+describe("finalizeMemoryCommit", () => {
   let tmpDir: string;
-  let state: GccState;
+  let state: MemoryState;
   let branches: BranchManager;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-finalize-test-"));
-    const gccDir = path.join(tmpDir, ".gcc");
-    fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-finalize-test-"));
+    const memoryDir = path.join(tmpDir, ".memory");
+    fs.mkdirSync(path.join(memoryDir, "branches"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       'active_branch: main\ninitialized: "2026-02-22T14:00:00Z"'
     );
     // Create root AGENTS.md for updateRootAgentsMd
     fs.writeFileSync(path.join(tmpDir, "AGENTS.md"), "# Project\n");
 
-    state = new GccState(tmpDir);
+    state = new MemoryState(tmpDir);
     state.load();
     branches = new BranchManager(tmpDir);
     branches.createBranch("main", "Main branch");
@@ -116,7 +116,7 @@ describe("finalizeGccCommit", () => {
     ].join("\n");
 
     // Act
-    finalizeGccCommit("First milestone", commitContent, state, branches);
+    finalizeMemoryCommit("First milestone", commitContent, state, branches);
 
     // Assert
     const commits = branches.readCommits("main");
@@ -131,7 +131,7 @@ describe("finalizeGccCommit", () => {
       "### Branch Purpose\n\nMain\n\n### Previous Progress Summary\n\nNone.\n\n### This Commit's Contribution\n\nDone.\n";
 
     // Act
-    finalizeGccCommit("Done", commitContent, state, branches);
+    finalizeMemoryCommit("Done", commitContent, state, branches);
 
     // Assert
     expect(branches.readLog("main")).toBe("");
@@ -145,7 +145,12 @@ describe("finalizeGccCommit", () => {
       "### Branch Purpose\n\nMain\n\n### Previous Progress Summary\n\nNone.\n\n### This Commit's Contribution\n\nArchitecture decided.\n";
 
     // Act
-    finalizeGccCommit("Architecture decided", commitContent, state, branches);
+    finalizeMemoryCommit(
+      "Architecture decided",
+      commitContent,
+      state,
+      branches
+    );
 
     // Assert
     expect(state.lastCommit).not.toBeNull();
@@ -163,7 +168,7 @@ describe("finalizeGccCommit", () => {
     const before = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
 
     // Act
-    finalizeGccCommit("New milestone", commitContent, state, branches);
+    finalizeMemoryCommit("New milestone", commitContent, state, branches);
 
     // Assert
     const after = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
@@ -176,7 +181,7 @@ describe("finalizeGccCommit", () => {
       "### Branch Purpose\n\nMain\n\n### Previous Progress Summary\n\nNone.\n\n### This Commit's Contribution\n\nTest hash.\n";
 
     // Act
-    finalizeGccCommit("Test hash", commitContent, state, branches);
+    finalizeMemoryCommit("Test hash", commitContent, state, branches);
 
     // Assert
     const commits = branches.readCommits("main");

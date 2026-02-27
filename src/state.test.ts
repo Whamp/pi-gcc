@@ -4,16 +4,16 @@ import * as path from "node:path";
 
 import fc from "fast-check";
 
-import { GccState } from "./state.js";
+import { MemoryState } from "./state.js";
 
-describe("gccState", () => {
+describe("memoryState", () => {
   let tmpDir: string;
-  let gccDir: string;
+  let memoryDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-state-test-"));
-    gccDir = path.join(tmpDir, ".gcc");
-    fs.mkdirSync(gccDir, { recursive: true });
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-state-test-"));
+    memoryDir = path.join(tmpDir, ".memory");
+    fs.mkdirSync(memoryDir, { recursive: true });
   });
 
   afterEach(() => {
@@ -23,12 +23,12 @@ describe("gccState", () => {
   it("should load valid state.yaml", () => {
     // Arrange
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       `active_branch: main\ninitialized: "2026-02-22T14:00:00Z"`
     );
 
     // Act
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
     state.load();
 
     // Assert
@@ -38,10 +38,10 @@ describe("gccState", () => {
 
   it("should fall back to defaults when state.yaml is empty", () => {
     // Arrange
-    fs.writeFileSync(path.join(gccDir, "state.yaml"), "");
+    fs.writeFileSync(path.join(memoryDir, "state.yaml"), "");
 
     // Act
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
     state.load();
 
     // Assert
@@ -50,7 +50,7 @@ describe("gccState", () => {
 
   it("should fall back to defaults when state.yaml is missing", () => {
     // Act
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
     state.load();
 
     // Assert
@@ -59,14 +59,14 @@ describe("gccState", () => {
 
   it("should report isInitialized correctly", () => {
     // Arrange
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
 
     // Assert (before load)
     expect(state.isInitialized).toBeFalsy();
 
     // Arrange
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       `active_branch: main\ninitialized: "2026-02-22T14:00:00Z"`
     );
 
@@ -80,10 +80,10 @@ describe("gccState", () => {
   it("should update active branch and persist", () => {
     // Arrange
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       `active_branch: main\ninitialized: "2026-02-22T14:00:00Z"`
     );
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
     state.load();
 
     // Act
@@ -91,7 +91,7 @@ describe("gccState", () => {
     state.save();
 
     // Assert
-    const reloaded = new GccState(tmpDir);
+    const reloaded = new MemoryState(tmpDir);
     reloaded.load();
     expect(reloaded.activeBranch).toBe("feature-x");
   });
@@ -99,10 +99,10 @@ describe("gccState", () => {
   it("should update last commit and persist", () => {
     // Arrange
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       `active_branch: main\ninitialized: "2026-02-22T14:00:00Z"`
     );
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
     state.load();
 
     // Act
@@ -115,7 +115,7 @@ describe("gccState", () => {
     state.save();
 
     // Assert
-    const reloaded = new GccState(tmpDir);
+    const reloaded = new MemoryState(tmpDir);
     reloaded.load();
     expect(reloaded.lastCommit).toStrictEqual({
       branch: "main",
@@ -128,7 +128,7 @@ describe("gccState", () => {
   it("should update existing session branch while preserving started timestamp", () => {
     // Arrange
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       [
         "active_branch: main",
         'initialized: "2026-02-22T14:00:00Z"',
@@ -139,7 +139,7 @@ describe("gccState", () => {
       ].join("\n")
     );
 
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
     state.load();
 
     // Act
@@ -151,7 +151,7 @@ describe("gccState", () => {
     state.save();
 
     // Assert
-    const reloaded = new GccState(tmpDir);
+    const reloaded = new MemoryState(tmpDir);
     reloaded.load();
 
     expect(reloaded.sessions).toStrictEqual([
@@ -166,7 +166,7 @@ describe("gccState", () => {
   it("should track sessions and persist them", () => {
     // Arrange
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       [
         "active_branch: main",
         'initialized: "2026-02-22T14:00:00Z"',
@@ -177,7 +177,7 @@ describe("gccState", () => {
       ].join("\n")
     );
 
-    const state = new GccState(tmpDir);
+    const state = new MemoryState(tmpDir);
     state.load();
 
     // Act
@@ -190,7 +190,7 @@ describe("gccState", () => {
     state.save();
 
     // Assert
-    const reloaded = new GccState(tmpDir);
+    const reloaded = new MemoryState(tmpDir);
     reloaded.load();
 
     expect(reloaded.sessions).toStrictEqual([
@@ -215,16 +215,16 @@ describe("gccState", () => {
           (branch) => {
             // Arrange
             fs.writeFileSync(
-              path.join(gccDir, "state.yaml"),
+              path.join(memoryDir, "state.yaml"),
               'active_branch: main\ninitialized: "2026-02-22T14:00:00Z"'
             );
-            const state = new GccState(tmpDir);
+            const state = new MemoryState(tmpDir);
             state.load();
 
             // Act
             state.setActiveBranch(branch);
             state.save();
-            const reloaded = new GccState(tmpDir);
+            const reloaded = new MemoryState(tmpDir);
             reloaded.load();
 
             // Assert

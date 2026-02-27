@@ -8,4 +8,4 @@ dist/
 coverage/
 .worktrees/
 
-.gcc/branches/*/log.md
+.memory/branches/*/log.md

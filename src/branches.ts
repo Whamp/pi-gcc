@@ -2,14 +2,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 /**
- * Manages `.gcc/branches/` directory operations.
+ * Manages `.memory/branches/` directory operations.
  * Each branch has: log.md, commits.md, metadata.yaml.
  */
 export class BranchManager {
   private readonly branchesDir: string;
 
   constructor(projectDir: string) {
-    this.branchesDir = path.join(projectDir, ".gcc", "branches");
+    this.branchesDir = path.join(projectDir, ".memory", "branches");
   }
 
   createBranch(name: string, purpose: string): void {

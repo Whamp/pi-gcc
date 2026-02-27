@@ -18,7 +18,7 @@ interface AgentDefinition {
 }
 
 /**
- * Resolve the gcc-committer agent definition from the agent definition file.
+ * Resolve the memory-committer agent definition from the agent definition file.
  * Checks multiple locations to support both local development and npm installs.
  * Parses the YAML frontmatter for properties and uses the body as the system prompt.
  */
@@ -29,11 +29,11 @@ function resolveAgentPrompt(): AgentDefinition {
   // Possible locations for the agent definition file
   const candidates = [
     // Installed package: dist/ or src/ -> ../agents/ (bundled in package)
-    path.resolve(currentDir, "../agents/gcc-committer.md"),
+    path.resolve(currentDir, "../agents/memory-committer.md"),
     // Local development: src/ -> ../.pi/agents/
-    path.resolve(currentDir, "../.pi/agents/gcc-committer.md"),
+    path.resolve(currentDir, "../.pi/agents/memory-committer.md"),
     // Fallback: check if bundled alongside source
-    path.resolve(currentDir, "./agents/gcc-committer.md"),
+    path.resolve(currentDir, "./agents/memory-committer.md"),
   ];
 
   for (const agentFile of candidates) {
@@ -74,18 +74,18 @@ function resolveAgentPrompt(): AgentDefinition {
     }
   }
 
-  throw new Error("Could not locate gcc-committer.md agent definition file");
+  throw new Error("Could not locate memory-committer.md agent definition file");
 }
 
 export function buildCommitterTask(branch: string, summary: string): string {
   return [
-    `Distill a GCC commit for branch "${branch}".`,
+    `Distill a memory commit for branch "${branch}".`,
     `Summary: ${summary}`,
     "",
     "Read these files:",
-    "- .gcc/AGENTS.md (protocol reference — read first)",
-    `- .gcc/branches/${branch}/log.md (OTA trace to distill)`,
-    `- .gcc/branches/${branch}/commits.md (previous commits for rolling summary)`,
+    "- .memory/AGENTS.md (protocol reference — read first)",
+    `- .memory/branches/${branch}/log.md (OTA trace to distill)`,
+    `- .memory/branches/${branch}/commits.md (previous commits for rolling summary)`,
     "",
     "Produce the three commit blocks.",
   ].join("\n");
@@ -203,7 +203,7 @@ function writePromptToTempFile(prompt: string): {
   dir: string;
   filePath: string;
 } {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-committer-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-committer-"));
   const filePath = path.join(tmpDir, "system-prompt.md");
   fs.writeFileSync(filePath, prompt, { encoding: "utf8", mode: 0o600 });
   return { dir: tmpDir, filePath };

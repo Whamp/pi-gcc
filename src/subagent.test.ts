@@ -87,16 +87,16 @@ describe("buildCommitterTask", () => {
 
     expect(task).toContain('branch "main"');
     expect(task).toContain("Fixed auth flow");
-    expect(task).toContain(".gcc/AGENTS.md");
-    expect(task).toContain(".gcc/branches/main/log.md");
-    expect(task).toContain(".gcc/branches/main/commits.md");
+    expect(task).toContain(".memory/AGENTS.md");
+    expect(task).toContain(".memory/branches/main/log.md");
+    expect(task).toContain(".memory/branches/main/commits.md");
   });
 
   it("should escape branch names with special characters", () => {
     const task = buildCommitterTask("feature/auth-fix", "Summary");
 
     expect(task).toContain("feature/auth-fix");
-    expect(task).toContain(".gcc/branches/feature/auth-fix/log.md");
+    expect(task).toContain(".memory/branches/feature/auth-fix/log.md");
   });
 });
 
@@ -110,7 +110,7 @@ describe("extractFinalText", () => {
           content: [
             {
               type: "text",
-              text: "### Branch Purpose\nBuild GCC.\n\n### Previous Progress Summary\nInitial commit.\n\n### This Commit's Contribution\n- Added spawn module.",
+              text: "### Branch Purpose\nBuild the project.\n\n### Previous Progress Summary\nInitial commit.\n\n### This Commit's Contribution\n- Added spawn module.",
             },
           ],
         },
@@ -181,7 +181,7 @@ describe("extractCommitBlocks", () => {
   it("should extract three commit blocks from text", () => {
     const text = [
       "### Branch Purpose",
-      "Build the GCC extension for persistent agent memory.",
+      "Build the memory extension for persistent agent memory.",
       "",
       "### Previous Progress Summary",
       "Completed Phase 1 foundation: YAML parser, state manager, hash generator.",
@@ -201,7 +201,7 @@ describe("extractCommitBlocks", () => {
       "I've reviewed the log and here is the commit:",
       "",
       "### Branch Purpose",
-      "Build the GCC extension.",
+      "Build the memory extension.",
       "",
       "### Previous Progress Summary",
       "Phase 1 done.",
@@ -356,7 +356,7 @@ describe("buildCommitterTask property-based tests", () => {
           const task = buildCommitterTask(branch, summary);
 
           // Assert
-          expect(task).toContain(".gcc/AGENTS.md");
+          expect(task).toContain(".memory/AGENTS.md");
           expect(task).toContain(`${branch}/log.md`);
           expect(task).toContain(`${branch}/commits.md`);
         }

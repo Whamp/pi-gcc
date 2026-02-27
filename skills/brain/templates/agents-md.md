@@ -1,21 +1,21 @@
-# GCC — Git Context Controller
+# Brain — Agent Memory
 
-This directory contains your project's agent memory, managed by the GCC extension.
+This directory contains your project's agent memory, managed by the Brain extension.
 
 ## Tools
 
-| Tool          | Purpose                                 |
-| ------------- | --------------------------------------- |
-| `gcc_commit`  | Checkpoint a milestone in understanding |
-| `gcc_branch`  | Create a memory branch for exploration  |
-| `gcc_merge`   | Synthesize branch conclusions           |
-| `gcc_context` | Multi-resolution retrieval of memory    |
-| `gcc_switch`  | Switch active memory branch             |
+| Tool            | Purpose                                 |
+| --------------- | --------------------------------------- |
+| `memory_commit` | Checkpoint a milestone in understanding |
+| `memory_branch` | Create a memory branch for exploration  |
+| `memory_merge`  | Synthesize branch conclusions           |
+| `memory_status` | Multi-resolution retrieval of memory    |
+| `memory_switch` | Switch active memory branch             |
 
 ## File Structure
 
 ```
-.gcc/
+.memory/
 ├── AGENTS.md                    # This file — protocol reference
 ├── main.md                      # Project roadmap (agent-authored)
 └── branches/
@@ -41,4 +41,4 @@ The latest commit always contains a self-contained summary of the full branch hi
 - **Decisions over details**: Capture "why", not "what" — git tracks file changes
 - **Rolling summaries**: Each commit re-synthesizes all prior progress
 - **No direct log.md writes**: The extension maintains log.md automatically
-- **Call `gcc_context` first**: Always review context before merging or starting new work
+- **Call `memory_status` first**: Always review context before merging or starting new work

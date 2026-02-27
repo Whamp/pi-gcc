@@ -15,3 +15,6 @@ sessions:
   - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-gcc--/2026-02-26T00-01-26-241Z_969837d1-320b-4122-9962-0ce3f2c2d9b7.jsonl"
     branch: main
     started: "2026-02-26T00:01:26.258Z"
+  - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-gcc--/2026-02-27T20-29-40-500Z_fcdb8a41-19dd-490d-82ec-7c5625b7f0c0.jsonl"
+    branch: main
+    started: "2026-02-27T20:29:40.517Z"

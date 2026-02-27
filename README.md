@@ -1,175 +1,109 @@
-# pi-gcc
+# pi-brain
 
-`pi-gcc` is a **memory extension** for the [pi coding agent](https://github.com/badlogic/pi-mono).
+Versioned memory for the [pi coding agent](https://github.com/badlogic/pi-mono). Agents commit decisions and reasoning to a `.memory/` directory, preserving context across sessions, compactions, and model switches.
 
-It gives an agent a versioned memory in a `.gcc/` folder, so it can keep context across sessions.
-
----
-
-## Quick start
+## Getting Started
 
 ```bash
-pi install git:github.com/Whamp/pi-gcc
+pi install npm:pi-brain
 ```
 
-Then open pi in the project where you want GCC memory and either ask it to
-initialize GCC or run `/skill:gcc`.
+Open pi in any project and say "initialize Brain" (or run `/skill:brain`). The agent creates `.memory/` and starts remembering.
 
----
+That's it. The agent decides when to commit, branch, and merge — you don't need to manage anything.
 
-## Install options
+## How It Works
+
+Brain adds five tools and a few lifecycle hooks to pi. The design is simple: the agent works normally, and Brain records what happens in the background.
+
+**Every turn**, Brain appends a structured log entry to `.memory/branches/<branch>/log.md`. This happens automatically via the `turn_end` hook — the agent doesn't call anything.
+
+**When the agent reaches a milestone**, it calls `memory_commit` with a short summary. Brain spawns a subagent in a fresh context window that reads the raw log, distills it into a structured commit (decisions, rationale, what was tried and rejected), and appends it to `commits.md`. The log is then cleared.
+
+**Each commit is self-contained.** It includes a rolling summary of all prior commits, so the latest commit always tells the full branch story. A new session can read one commit and know everything.
+
+**Branching and merging** work like you'd expect. The agent branches to explore alternatives without contaminating the main line, then merges conclusions back with a synthesis.
+
+### The Five Tools
+
+| Tool            | What it does                                                     |
+| --------------- | ---------------------------------------------------------------- |
+| `memory_status` | Quick status overview — active branch, latest commit, turn count |
+| `memory_commit` | Checkpoint a milestone (subagent distills the log)               |
+| `memory_branch` | Create a branch for exploration                                  |
+| `memory_switch` | Switch between branches                                          |
+| `memory_merge`  | Merge insights from one branch into another                      |
+
+For deep retrieval, the agent uses pi's built-in `read` tool on `.memory/` files directly. No special API needed.
+
+## Prompt Cache Safety
+
+LLM providers cache the prefix of each request. If the prefix changes between turns, the cache misses and you pay full latency and cost. Many memory systems break this by injecting dynamic state into the system prompt.
+
+Brain avoids this entirely:
+
+- **Static AGENTS.md** — Written once at init, never updated. No branch names, no commit counts, no dynamic state. The system prompt prefix stays identical across every turn and session.
+- **No per-turn injection** — No `before_agent_start` hook, no changing content before the conversation. The agent retrieves memory on demand via tool calls, which appear as conversation messages appended at the end (outside the cached prefix).
+- **Fixed tool definitions** — All five tools are registered at startup with static schemas. No tools added or removed mid-conversation.
+- **Subagent isolation** — Commit distillation runs in a separate API call with its own cache. The main agent's cache is never touched.
+
+The result: Brain adds zero overhead to your prompt cache hit rate.
+
+## What Gets Created
+
+```
+.memory/
+├── AGENTS.md                      # Protocol reference
+├── main.md                        # Project roadmap (agent-authored)
+├── state.yaml                     # Active branch, session tracking
+└── branches/
+    └── main/
+        ├── commits.md             # Distilled milestone snapshots
+        ├── log.md                 # Raw turn log (gitignored)
+        └── metadata.yaml          # Structured context
+```
+
+Everything in `.memory/` is tracked in git except `log.md` (transient working state). This means memory is shared across machines and team members.
+
+## Install Options
 
 ```bash
+# From npm (recommended)
+pi install npm:pi-brain
+
 # From git (latest)
-pi install git:github.com/Whamp/pi-gcc
+pi install git:github.com/Whamp/pi-brain
 
-# From git (pinned version)
-pi install git:github.com/Whamp/pi-gcc@v0.1.0
+# Pinned version (npm)
+pi install npm:pi-brain@0.1.0
 
-# Project-local (shared with team via .pi/settings.json)
-pi install -l git:github.com/Whamp/pi-gcc
+# Pinned version (git)
+pi install git:github.com/Whamp/pi-brain@v0.1.0
+
+# Project-local (shared via .pi/settings.json)
+pi install -l npm:pi-brain
 
 # Try without installing
-pi -e git:github.com/Whamp/pi-gcc
+pi -e npm:pi-brain
 ```
 
-### Local development
+## Development
 
 ```bash
-git clone https://github.com/Whamp/pi-gcc.git
-cd pi-gcc
-pnpm install --prod=false    # .npmrc omits dev deps by default
-pnpm run check
+git clone https://github.com/Whamp/pi-brain.git
+cd pi-brain
+pnpm install --prod=false
+pnpm run check               # lint + typecheck + format + tests + deadcode + secrets
 
-# Run pi with the extension loaded from source
-pi -e ./src/index.ts
+pi -e ./src/index.ts          # run pi with extension loaded from source
 ```
 
----
+| Command            | Purpose         |
+| ------------------ | --------------- |
+| `pnpm run check`   | Full validation |
+| `pnpm run test`    | Tests only      |
+| `pnpm run release` | Bump, tag, push |
 
-## What this project does
+## License
 
-It adds 5 tools to pi:
-
-- `gcc_context` — read a status overview (use `read` for deep file-level retrieval)
-- `gcc_branch` — create a memory branch
-- `gcc_switch` — switch memory branch
-- `gcc_commit` — checkpoint what the agent learned
-- `gcc_merge` — merge branch insights back into the active branch
-
-It also uses hooks to:
-
-- auto-log turns to `.gcc/branches/<branch>/log.md`
-- register/update session mapping in `.gcc/state.yaml` (on `session_start` and branch changes via `gcc_branch`/`gcc_switch`)
-- warn when `log.md` exceeds 600 KB (~150-175k tokens), nudging the agent to commit
-
----
-
-## If you are a total novice: start here
-
-### 1) Install requirements
-
-You need:
-
-- Node.js 20+
-- pi CLI
-- git
-
-Check quickly:
-
-```bash
-node -v
-pi --help
-git --version
-```
-
-### 2) Install the extension
-
-```bash
-pi install git:github.com/Whamp/pi-gcc
-```
-
----
-
-## Run the extension locally (development)
-
-From the cloned repository root:
-
-```bash
-pi -e ./src/index.ts
-```
-
-This starts pi with the GCC extension loaded.
-
----
-
-## Initialize GCC memory in a project
-
-Inside pi, tell the agent to initialize GCC or run `/skill:gcc`.
-The agent loads the skill, resolves the init script path, and runs it.
-No manual bash invocation needed.
-
-The init script creates:
-
-- `.gcc/state.yaml`
-- `.gcc/branches/main/log.md`
-- `.gcc/branches/main/commits.md`
-- `.gcc/branches/main/metadata.yaml`
-- `.gcc/main.md`
-- `.gcc/AGENTS.md`
-- static GCC section in root `AGENTS.md` (if missing)
-
----
-
-## First-time workflow example
-
-Inside pi (with extension loaded), try this order:
-
-1. `gcc_context` (no args) — see current memory state
-2. `gcc_branch` with name + purpose — create exploration branch
-3. Do normal work (read/edit/test)
-4. `gcc_commit` with a summary — a subagent distills your log into a structured commit
-
----
-
-## Development commands
-
-| Goal                   | Command              |
-| ---------------------- | -------------------- |
-| Full validation        | `pnpm run check`     |
-| Tests                  | `pnpm run test`      |
-| Type check             | `pnpm run typecheck` |
-| Lint                   | `pnpm run lint`      |
-| Format                 | `pnpm run format`    |
-| Auto-fix lint + format | `pnpm run fix`       |
-| Release new version    | `pnpm run release`   |
-
----
-
-## Common problems
-
-### "GCC not initialized. Run gcc-init.sh first."
-
-You are in a project that does not have `.gcc/` yet. Ask the agent to initialize GCC, or load the `gcc` skill.
-
-### I do not see notifications in print/json mode
-
-That is expected. In non-UI mode, verify by checking files in `.gcc/` and emitted events.
-
----
-
-## Releasing
-
-Uses [changelogen](https://github.com/unjs/changelogen) with conventional commits.
-
-```bash
-pnpm run release
-```
-
-This bumps the version in `package.json`, updates `CHANGELOG.md` from your commit history, creates a git tag, and pushes everything.
-
----
-
-## Project status
-
-Under active development.
+MIT

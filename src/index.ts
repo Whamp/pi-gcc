@@ -11,18 +11,18 @@ import { Type } from "@sinclair/typebox";
 
 import { BranchManager } from "./branches.js";
 import { LOG_SIZE_WARNING_BYTES } from "./constants.js";
-import { executeGccBranch } from "./gcc-branch.js";
-import { executeGccCommit, finalizeGccCommit } from "./gcc-commit.js";
-import { executeGccContext } from "./gcc-context.js";
-import { executeGccMerge } from "./gcc-merge.js";
-import { executeGccSwitch } from "./gcc-switch.js";
+import { executeMemoryBranch } from "./memory-branch.js";
+import { executeMemoryCommit, finalizeMemoryCommit } from "./memory-commit.js";
+import { executeMemoryStatus } from "./memory-context.js";
+import { executeMemoryMerge } from "./memory-merge.js";
+import { executeMemorySwitch } from "./memory-switch.js";
 import { formatOtaEntry } from "./ota-formatter.js";
 import { extractOtaInput } from "./ota-logger.js";
-import { GccState } from "./state.js";
+import { MemoryState } from "./state.js";
 import { extractCommitBlocks, spawnCommitter } from "./subagent.js";
 
-const GCC_NOT_INITIALIZED_MESSAGE =
-  "GCC not initialized. Run gcc-init.sh first.";
+const MEMORY_NOT_INITIALIZED_MESSAGE =
+  "Brain not initialized. Run brain-init.sh first.";
 
 function createTextResult(text: string): AgentToolResult<unknown> {
   return {
@@ -31,14 +31,14 @@ function createTextResult(text: string): AgentToolResult<unknown> {
   };
 }
 
-function isGccReady(
-  state: GccState | null,
+function isMemoryReady(
+  state: MemoryState | null,
   branchManager: BranchManager | null
-): state is GccState {
+): state is MemoryState {
   return state !== null && branchManager !== null && state.isInitialized;
 }
 
-function upsertCurrentSession(state: GccState, ctx: ExtensionContext): void {
+function upsertCurrentSession(state: MemoryState, ctx: ExtensionContext): void {
   const sessionFile = ctx.sessionManager.getSessionFile();
   if (!sessionFile) {
     return;
@@ -53,7 +53,7 @@ function upsertCurrentSession(state: GccState, ctx: ExtensionContext): void {
 }
 
 function buildCompactionReminder(
-  state: GccState,
+  state: MemoryState,
   branchManager: BranchManager
 ): string {
   const branch = state.activeBranch;
@@ -61,8 +61,8 @@ function buildCompactionReminder(
   const summary = state.lastCommit?.summary ?? "No commits yet";
 
   return [
-    `GCC memory active on branch "${branch}".`,
-    `${turns} uncommitted turn${turns === 1 ? "" : "s"} in .gcc/branches/${branch}/log.md.`,
+    `Brain memory active on branch "${branch}".`,
+    `${turns} uncommitted turn${turns === 1 ? "" : "s"} in .memory/branches/${branch}/log.md.`,
     `Latest commit summary: ${summary}.`,
   ].join(" ");
 }
@@ -79,19 +79,19 @@ function appendCompactionReminder(
 function resolveSkillPath(): string {
   const currentFile = fileURLToPath(import.meta.url);
   const currentDir = path.dirname(currentFile);
-  return path.resolve(currentDir, "../skills/gcc");
+  return path.resolve(currentDir, "../skills/brain");
 }
 
 export default function activate(pi: ExtensionAPI) {
-  let state: GccState | null = null;
+  let state: MemoryState | null = null;
   let branchManager: BranchManager | null = null;
 
   function tryLoad(ctx: ExtensionContext): boolean {
-    if (isGccReady(state, branchManager)) {
+    if (isMemoryReady(state, branchManager)) {
       return true;
     }
 
-    const candidate = new GccState(ctx.cwd);
+    const candidate = new MemoryState(ctx.cwd);
     candidate.load();
 
     if (!candidate.isInitialized) {
@@ -105,9 +105,9 @@ export default function activate(pi: ExtensionAPI) {
   }
 
   pi.registerTool({
-    name: "gcc_context",
-    label: "GCC Context",
-    description: "Retrieve GCC memory status overview.",
+    name: "memory_status",
+    label: "Memory Status",
+    description: "Retrieve agent memory status overview.",
     parameters: Type.Object({
       level: Type.Optional(Type.String()),
       branch: Type.Optional(Type.String()),
@@ -117,22 +117,22 @@ export default function activate(pi: ExtensionAPI) {
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       if (
         !tryLoad(ctx) ||
-        !isGccReady(state, branchManager) ||
+        !isMemoryReady(state, branchManager) ||
         !branchManager
       ) {
-        return createTextResult(GCC_NOT_INITIALIZED_MESSAGE);
+        return createTextResult(MEMORY_NOT_INITIALIZED_MESSAGE);
       }
 
       return createTextResult(
-        executeGccContext(params, state, branchManager, ctx.cwd)
+        executeMemoryStatus(params, state, branchManager, ctx.cwd)
       );
     },
   });
 
   pi.registerTool({
-    name: "gcc_branch",
-    label: "GCC Branch",
-    description: "Create a new GCC memory branch.",
+    name: "memory_branch",
+    label: "Memory Branch",
+    description: "Create a new memory branch.",
     parameters: Type.Object({
       name: Type.String({ description: "Branch name" }),
       purpose: Type.String({ description: "Why this branch exists" }),
@@ -140,14 +140,14 @@ export default function activate(pi: ExtensionAPI) {
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       if (
         !tryLoad(ctx) ||
-        !isGccReady(state, branchManager) ||
+        !isMemoryReady(state, branchManager) ||
         !branchManager
       ) {
-        return createTextResult(GCC_NOT_INITIALIZED_MESSAGE);
+        return createTextResult(MEMORY_NOT_INITIALIZED_MESSAGE);
       }
 
       const previousBranch = state.activeBranch;
-      const result = executeGccBranch(params, state, branchManager);
+      const result = executeMemoryBranch(params, state, branchManager);
 
       if (state.activeBranch !== previousBranch) {
         upsertCurrentSession(state, ctx);
@@ -158,23 +158,23 @@ export default function activate(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "gcc_switch",
-    label: "GCC Switch",
-    description: "Switch to another GCC memory branch.",
+    name: "memory_switch",
+    label: "Memory Switch",
+    description: "Switch to another memory branch.",
     parameters: Type.Object({
       branch: Type.String({ description: "Target branch name" }),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       if (
         !tryLoad(ctx) ||
-        !isGccReady(state, branchManager) ||
+        !isMemoryReady(state, branchManager) ||
         !branchManager
       ) {
-        return createTextResult(GCC_NOT_INITIALIZED_MESSAGE);
+        return createTextResult(MEMORY_NOT_INITIALIZED_MESSAGE);
       }
 
       const previousBranch = state.activeBranch;
-      const result = executeGccSwitch(params, state, branchManager);
+      const result = executeMemorySwitch(params, state, branchManager);
 
       if (state.activeBranch !== previousBranch) {
         upsertCurrentSession(state, ctx);
@@ -185,9 +185,10 @@ export default function activate(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "gcc_merge",
-    label: "GCC Merge",
-    description: "Merge insights from one GCC branch into the active branch.",
+    name: "memory_merge",
+    label: "Memory Merge",
+    description:
+      "Merge insights from one memory branch into the active branch.",
     parameters: Type.Object({
       branch: Type.String({ description: "Source branch to merge from" }),
       synthesis: Type.String({
@@ -197,20 +198,20 @@ export default function activate(pi: ExtensionAPI) {
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       if (
         !tryLoad(ctx) ||
-        !isGccReady(state, branchManager) ||
+        !isMemoryReady(state, branchManager) ||
         !branchManager
       ) {
-        return createTextResult(GCC_NOT_INITIALIZED_MESSAGE);
+        return createTextResult(MEMORY_NOT_INITIALIZED_MESSAGE);
       }
 
-      return createTextResult(executeGccMerge(params, state, branchManager));
+      return createTextResult(executeMemoryMerge(params, state, branchManager));
     },
   });
 
   pi.registerTool({
-    name: "gcc_commit",
-    label: "GCC Commit",
-    description: "Checkpoint a milestone in the agent's GCC memory.",
+    name: "memory_commit",
+    label: "Memory Commit",
+    description: "Checkpoint a milestone in agent memory.",
     parameters: Type.Object({
       summary: Type.String({ description: "Short summary of this checkpoint" }),
       update_roadmap: Type.Optional(Type.Boolean()),
@@ -218,13 +219,13 @@ export default function activate(pi: ExtensionAPI) {
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       if (
         !tryLoad(ctx) ||
-        !isGccReady(state, branchManager) ||
+        !isMemoryReady(state, branchManager) ||
         !branchManager
       ) {
-        return createTextResult(GCC_NOT_INITIALIZED_MESSAGE);
+        return createTextResult(MEMORY_NOT_INITIALIZED_MESSAGE);
       }
 
-      const { task } = executeGccCommit(params, state, branchManager);
+      const { task } = executeMemoryCommit(params, state, branchManager);
 
       const result = await spawnCommitter(ctx.cwd, task, signal);
 
@@ -241,7 +242,7 @@ export default function activate(pi: ExtensionAPI) {
         );
       }
 
-      const message = finalizeGccCommit(
+      const message = finalizeMemoryCommit(
         params.summary,
         commitContent,
         state,
@@ -253,7 +254,7 @@ export default function activate(pi: ExtensionAPI) {
   });
 
   pi.on("session_start", (_event, ctx) => {
-    state = new GccState(ctx.cwd);
+    state = new MemoryState(ctx.cwd);
     state.load();
     branchManager = new BranchManager(ctx.cwd);
 
@@ -269,12 +270,12 @@ export default function activate(pi: ExtensionAPI) {
     if (logSizeBytes >= LOG_SIZE_WARNING_BYTES) {
       const sizeKB = Math.round(logSizeBytes / 1024);
       ctx.ui.notify(
-        `GCC: log.md is large (${sizeKB} KB). You should commit to distill this into structured memory.`,
+        `Brain: log.md is large (${sizeKB} KB). You should commit to distill this into structured memory.`,
         "warning"
       );
     } else {
       ctx.ui.notify(
-        `GCC active: branch "${state.activeBranch}" (${turnCount} uncommitted turn${turnCount === 1 ? "" : "s"}).`,
+        `Brain active: branch "${state.activeBranch}" (${turnCount} uncommitted turn${turnCount === 1 ? "" : "s"}).`,
         "info"
       );
     }
@@ -285,7 +286,7 @@ export default function activate(pi: ExtensionAPI) {
   }));
 
   pi.on("turn_end", (event) => {
-    if (!isGccReady(state, branchManager) || !branchManager) {
+    if (!isMemoryReady(state, branchManager) || !branchManager) {
       return;
     }
 
@@ -299,7 +300,7 @@ export default function activate(pi: ExtensionAPI) {
   });
 
   pi.on("session_before_compact", (event) => {
-    if (!isGccReady(state, branchManager) || !branchManager) {
+    if (!isMemoryReady(state, branchManager) || !branchManager) {
       return;
     }
 

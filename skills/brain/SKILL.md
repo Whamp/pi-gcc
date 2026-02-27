@@ -1,9 +1,9 @@
 ---
-name: gcc
-description: Use when working on a project with GCC (Git Context Controller) memory management. Triggers on gcc_context, gcc_commit, gcc_branch, gcc_merge, gcc_switch tool usage, or when the project has a .gcc/ directory.
+name: brain
+description: Use when working on a project with Brain agent memory management. Triggers on memory_status, memory_commit, memory_branch, memory_merge, memory_switch tool usage, or when the project has a .memory/ directory.
 ---
 
-# GCC — Git Context Controller
+# Brain — Agent Memory
 
 ## Initialization
 
@@ -11,18 +11,18 @@ When the `<skill>` tag loads this file, it includes a `location` attribute with 
 absolute path to this SKILL.md. Use that to derive the init script path:
 
 ```bash
-bash "/absolute/path/to/skills/gcc/scripts/gcc-init.sh"
+bash "/absolute/path/to/skills/brain/scripts/brain-init.sh"
 ```
 
-Replace `/absolute/path/to/skills/gcc` with the skill directory shown in the
+Replace `/absolute/path/to/skills/brain` with the skill directory shown in the
 `<skill>` tag's `location` attribute (strip the `/SKILL.md` suffix).
 
 ### After Init
 
-1. **Tell the user to run `/reload`** — the GCC tools won't detect the new `.gcc/`
+1. **Tell the user to run `/reload`** — the memory tools won't detect the new `.memory/`
    directory until the extension reloads.
-2. **Write `.gcc/main.md`** — the project roadmap (see below).
-3. **Call `gcc_context`** to verify GCC is active.
+2. **Write `.memory/main.md`** — the project roadmap (see below).
+3. **Call `memory_status`** to verify Brain is active.
 4. **Make your first commit** when you reach a meaningful milestone.
 
 ### Writing main.md — Greenfield vs Brownfield
@@ -72,28 +72,28 @@ then produces the structured commit entry. You just provide a good `summary` str
 - The branch's findings should inform the main line of thinking
 - Include what was learned even if the approach was abandoned
 
-**Important:** Always review the source branch history BEFORE calling `gcc_merge`.
+**Important:** Always review the source branch history BEFORE calling `memory_merge`.
 Use:
 
-- `gcc_context` for high-level status
-- `read .gcc/branches/<target>/commits.md` for full branch history
+- `memory_status` for high-level status
+- `read .memory/branches/<target>/commits.md` for full branch history
 
 You need the full context to write a good synthesis.
 
 ## When to Use Context Retrieval
 
-- Starting a new session on an existing project — call `gcc_context` first
+- Starting a new session on an existing project — call `memory_status` first
 - Before making a decision that might conflict with earlier reasoning
 - When you need to recall the rationale behind a previous decision
 
 ## Context Retrieval
 
-Use `gcc_context` for high-level status only.
+Use `memory_status` for high-level status only.
 
 For deep retrieval, use `read` directly:
 
-- `read .gcc/branches/<name>/commits.md` — full branch history
-- `read .gcc/branches/<name>/log.md` — OTA trace since last commit
-- `read .gcc/branches/<name>/metadata.yaml` — structured metadata
-- `read .gcc/main.md` — project roadmap
-- `read .gcc/AGENTS.md` — full protocol reference
+- `read .memory/branches/<name>/commits.md` — full branch history
+- `read .memory/branches/<name>/log.md` — OTA trace since last commit
+- `read .memory/branches/<name>/metadata.yaml` — structured metadata
+- `read .memory/main.md` — project roadmap
+- `read .memory/AGENTS.md` — full protocol reference

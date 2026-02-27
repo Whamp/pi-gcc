@@ -4,35 +4,38 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-describe("gcc-init.sh", () => {
+describe("brain-init.sh", () => {
   let tmpDir: string;
   const testDir = path.dirname(fileURLToPath(import.meta.url));
-  const scriptPath = path.resolve(testDir, "../skills/gcc/scripts/gcc-init.sh");
+  const scriptPath = path.resolve(
+    testDir,
+    "../skills/brain/scripts/brain-init.sh"
+  );
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-init-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "brain-init-test-"));
   });
 
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("should create the .gcc directory structure", () => {
+  it("should create the .memory directory structure", () => {
     // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
     // Assert
-    expect(fs.existsSync(path.join(tmpDir, ".gcc/state.yaml"))).toBeTruthy();
-    expect(fs.existsSync(path.join(tmpDir, ".gcc/AGENTS.md"))).toBeTruthy();
-    expect(fs.existsSync(path.join(tmpDir, ".gcc/main.md"))).toBeTruthy();
+    expect(fs.existsSync(path.join(tmpDir, ".memory/state.yaml"))).toBeTruthy();
+    expect(fs.existsSync(path.join(tmpDir, ".memory/AGENTS.md"))).toBeTruthy();
+    expect(fs.existsSync(path.join(tmpDir, ".memory/main.md"))).toBeTruthy();
     expect(
-      fs.existsSync(path.join(tmpDir, ".gcc/branches/main/log.md"))
+      fs.existsSync(path.join(tmpDir, ".memory/branches/main/log.md"))
     ).toBeTruthy();
     expect(
-      fs.existsSync(path.join(tmpDir, ".gcc/branches/main/commits.md"))
+      fs.existsSync(path.join(tmpDir, ".memory/branches/main/commits.md"))
     ).toBeTruthy();
     expect(
-      fs.existsSync(path.join(tmpDir, ".gcc/branches/main/metadata.yaml"))
+      fs.existsSync(path.join(tmpDir, ".memory/branches/main/metadata.yaml"))
     ).toBeTruthy();
   });
 
@@ -41,20 +44,23 @@ describe("gcc-init.sh", () => {
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
     // Assert
-    const state = fs.readFileSync(path.join(tmpDir, ".gcc/state.yaml"), "utf8");
+    const state = fs.readFileSync(
+      path.join(tmpDir, ".memory/state.yaml"),
+      "utf8"
+    );
     expect(state).toContain("active_branch: main");
     expect(state).toContain("initialized:");
   });
 
-  it("should create root AGENTS.md with static GCC section", () => {
+  it("should create root AGENTS.md with static Brain section", () => {
     // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
     // Assert
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
-    expect(agents).toContain("## GCC");
+    expect(agents).toContain("## Brain");
     expect(agents).toContain(
-      "Tools: gcc_commit, gcc_branch, gcc_merge, gcc_switch, gcc_context"
+      "Tools: memory_commit, memory_branch, memory_merge, memory_switch, memory_status"
     );
     expect(agents).not.toContain("Current branch:");
   });
@@ -73,24 +79,24 @@ describe("gcc-init.sh", () => {
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
     expect(agents).toContain("# My Project");
     expect(agents).toContain("Existing content.");
-    expect(agents).toContain("## GCC");
+    expect(agents).toContain("## Brain");
   });
 
-  it("should be idempotent — running twice does not duplicate GCC section", () => {
+  it("should be idempotent — running twice does not duplicate Brain section", () => {
     // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
     // Assert
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
-    const gccMatches = agents.match(/## GCC/g);
-    expect(gccMatches?.length).toBe(1);
+    const brainMatches = agents.match(/## Brain/g);
+    expect(brainMatches?.length).toBe(1);
   });
 
-  it("should not overwrite existing .gcc files on second run", () => {
+  it("should not overwrite existing .memory files on second run", () => {
     // Arrange
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
-    const statePath = path.join(tmpDir, ".gcc/state.yaml");
+    const statePath = path.join(tmpDir, ".memory/state.yaml");
     const originalState = fs.readFileSync(statePath, "utf8");
     fs.writeFileSync(statePath, `${originalState}\nmodified: true`);
 
@@ -109,23 +115,23 @@ describe("gcc-init.sh", () => {
 
     // Assert
     const gitignore = fs.readFileSync(path.join(tmpDir, ".gitignore"), "utf8");
-    const matches = gitignore.match(/^\.gcc\/branches\/\*\/log\.md$/gm);
+    const matches = gitignore.match(/^\.memory\/branches\/\*\/log\.md$/gm);
     expect(matches?.length).toBe(1);
   });
 
-  it("should write .gcc/AGENTS.md with protocol reference", () => {
+  it("should write .memory/AGENTS.md with protocol reference", () => {
     // Act
     execFileSync("bash", [scriptPath], { cwd: tmpDir });
 
     // Assert
-    const gccAgents = fs.readFileSync(
-      path.join(tmpDir, ".gcc/AGENTS.md"),
+    const memoryAgents = fs.readFileSync(
+      path.join(tmpDir, ".memory/AGENTS.md"),
       "utf8"
     );
-    expect(gccAgents).toContain("gcc_commit");
-    expect(gccAgents).toContain("gcc_branch");
-    expect(gccAgents).toContain("gcc_context");
-    expect(gccAgents).toContain("gcc_merge");
-    expect(gccAgents).toContain("gcc_switch");
+    expect(memoryAgents).toContain("memory_commit");
+    expect(memoryAgents).toContain("memory_branch");
+    expect(memoryAgents).toContain("memory_status");
+    expect(memoryAgents).toContain("memory_merge");
+    expect(memoryAgents).toContain("memory_switch");
   });
 });

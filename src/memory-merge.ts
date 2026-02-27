@@ -1,19 +1,19 @@
 import type { BranchManager } from "./branches.js";
 import { generateHash } from "./hash.js";
-import type { GccState } from "./state.js";
+import type { MemoryState } from "./state.js";
 
-interface GccMergeParams {
+interface MemoryMergeParams {
   branch: string;
   synthesis: string;
 }
 
 /**
- * Execute the gcc_merge tool — synthesize a branch back into the current branch.
- * The agent should call gcc_context --branch <target> BEFORE calling this.
+ * Execute the memory_merge tool — synthesize a branch back into the current branch.
+ * The agent should call memory_status BEFORE calling this.
  */
-export function executeGccMerge(
-  params: GccMergeParams,
-  state: GccState,
+export function executeMemoryMerge(
+  params: MemoryMergeParams,
+  state: MemoryState,
   branches: BranchManager
 ): string {
   const { branch: sourceBranch, synthesis } = params;
