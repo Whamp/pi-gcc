@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.1.3
+
+[compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.2...v0.1.3)
+
+### 📖 Documentation
+
+- Add hero banner and fix Chromium screenshot height in skill ([0e72b62](https://github.com/Whamp/pi-brain/commit/0e72b62))
+
+### ❤️ Contributors
+
+- Will Hampson <will@ggl.slmail.me>
+
 ## v0.1.1
 
 [compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.0...v0.1.1)
