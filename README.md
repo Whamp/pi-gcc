@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./banner.png" alt="pi-brain banner" width="720" />
+</p>
+
 # pi-brain
 
 Versioned memory for the [pi coding agent](https://github.com/badlogic/pi-mono). Agents commit decisions and reasoning to a `.memory/` directory, preserving context across sessions, compactions, and model switches.
