@@ -110,7 +110,7 @@ describe("extractFinalText", () => {
           content: [
             {
               type: "text",
-              text: "### Branch Purpose\nBuild GCC.\n\n### Previous Progress Summary\nInitial commit.\n\n### This Commit's Contribution\n- Added spawn module.",
+              text: "### Branch Purpose\nBuild the project.\n\n### Previous Progress Summary\nInitial commit.\n\n### This Commit's Contribution\n- Added spawn module.",
             },
           ],
         },
@@ -181,7 +181,7 @@ describe("extractCommitBlocks", () => {
   it("should extract three commit blocks from text", () => {
     const text = [
       "### Branch Purpose",
-      "Build the GCC extension for persistent agent memory.",
+      "Build the memory extension for persistent agent memory.",
       "",
       "### Previous Progress Summary",
       "Completed Phase 1 foundation: YAML parser, state manager, hash generator.",
@@ -201,7 +201,7 @@ describe("extractCommitBlocks", () => {
       "I've reviewed the log and here is the commit:",
       "",
       "### Branch Purpose",
-      "Build the GCC extension.",
+      "Build the memory extension.",
       "",
       "### Previous Progress Summary",
       "Phase 1 done.",

@@ -1,23 +1,23 @@
 {
-  "name": "pi-gcc",
+  "name": "pi-brain",
   "version": "0.1.0",
-  "description": "GCC (Git Context Controller) memory extension for pi coding agent",
+  "description": "Versioned memory extension for the pi coding agent",
   "keywords": [
+    "brain",
     "context",
-    "gcc",
     "memory",
     "pi",
     "pi-coding-agent",
     "pi-package"
   ],
-  "homepage": "https://github.com/Whamp/pi-gcc#readme",
+  "homepage": "https://github.com/Whamp/pi-brain#readme",
   "bugs": {
-    "url": "https://github.com/Whamp/pi-gcc/issues"
+    "url": "https://github.com/Whamp/pi-brain/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Whamp/pi-gcc.git"
+    "url": "git+https://github.com/Whamp/pi-brain.git"
   },
   "files": [
     "src/",

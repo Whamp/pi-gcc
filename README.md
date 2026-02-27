@@ -1,19 +1,19 @@
-# pi-gcc
+# pi-brain
 
-`pi-gcc` is a **memory extension** for the [pi coding agent](https://github.com/badlogic/pi-mono).
+`pi-brain` is a **versioned memory extension** for the [pi coding agent](https://github.com/badlogic/pi-mono).
 
-It gives an agent a versioned memory in a `.gcc/` folder, so it can keep context across sessions.
+It gives an agent versioned memory in a `.memory/` folder, so it can keep context across sessions.
 
 ---
 
 ## Quick start
 
 ```bash
-pi install git:github.com/Whamp/pi-gcc
+pi install git:github.com/Whamp/pi-brain
 ```
 
-Then open pi in the project where you want GCC memory and either ask it to
-initialize GCC or run `/skill:gcc`.
+Then open pi in the project where you want memory and either ask it to
+initialize Brain or run `/skill:brain`.
 
 ---
 
@@ -21,23 +21,23 @@ initialize GCC or run `/skill:gcc`.
 
 ```bash
 # From git (latest)
-pi install git:github.com/Whamp/pi-gcc
+pi install git:github.com/Whamp/pi-brain
 
 # From git (pinned version)
-pi install git:github.com/Whamp/pi-gcc@v0.1.0
+pi install git:github.com/Whamp/pi-brain@v0.1.0
 
 # Project-local (shared with team via .pi/settings.json)
-pi install -l git:github.com/Whamp/pi-gcc
+pi install -l git:github.com/Whamp/pi-brain
 
 # Try without installing
-pi -e git:github.com/Whamp/pi-gcc
+pi -e git:github.com/Whamp/pi-brain
 ```
 
 ### Local development
 
 ```bash
-git clone https://github.com/Whamp/pi-gcc.git
-cd pi-gcc
+git clone https://github.com/Whamp/pi-brain.git
+cd pi-brain
 pnpm install --prod=false    # .npmrc omits dev deps by default
 pnpm run check
 
@@ -51,16 +51,16 @@ pi -e ./src/index.ts
 
 It adds 5 tools to pi:
 
-- `gcc_context` — read a status overview (use `read` for deep file-level retrieval)
-- `gcc_branch` — create a memory branch
-- `gcc_switch` — switch memory branch
-- `gcc_commit` — checkpoint what the agent learned
-- `gcc_merge` — merge branch insights back into the active branch
+- `memory_status` — read a status overview (use `read` for deep file-level retrieval)
+- `memory_branch` — create a memory branch
+- `memory_switch` — switch memory branch
+- `memory_commit` — checkpoint what the agent learned
+- `memory_merge` — merge branch insights back into the active branch
 
 It also uses hooks to:
 
-- auto-log turns to `.gcc/branches/<branch>/log.md`
-- register/update session mapping in `.gcc/state.yaml` (on `session_start` and branch changes via `gcc_branch`/`gcc_switch`)
+- auto-log turns to `.memory/branches/<branch>/log.md`
+- register/update session mapping in `.memory/state.yaml` (on `session_start` and branch changes via `memory_branch`/`memory_switch`)
 - warn when `log.md` exceeds 600 KB (~150-175k tokens), nudging the agent to commit
 
 ---
@@ -86,7 +86,7 @@ git --version
 ### 2) Install the extension
 
 ```bash
-pi install git:github.com/Whamp/pi-gcc
+pi install git:github.com/Whamp/pi-brain
 ```
 
 ---
@@ -99,25 +99,25 @@ From the cloned repository root:
 pi -e ./src/index.ts
 ```
 
-This starts pi with the GCC extension loaded.
+This starts pi with the Brain extension loaded.
 
 ---
 
-## Initialize GCC memory in a project
+## Initialize Brain memory in a project
 
-Inside pi, tell the agent to initialize GCC or run `/skill:gcc`.
+Inside pi, tell the agent to initialize Brain or run `/skill:brain`.
 The agent loads the skill, resolves the init script path, and runs it.
 No manual bash invocation needed.
 
 The init script creates:
 
-- `.gcc/state.yaml`
-- `.gcc/branches/main/log.md`
-- `.gcc/branches/main/commits.md`
-- `.gcc/branches/main/metadata.yaml`
-- `.gcc/main.md`
-- `.gcc/AGENTS.md`
-- static GCC section in root `AGENTS.md` (if missing)
+- `.memory/state.yaml`
+- `.memory/branches/main/log.md`
+- `.memory/branches/main/commits.md`
+- `.memory/branches/main/metadata.yaml`
+- `.memory/main.md`
+- `.memory/AGENTS.md`
+- static Brain section in root `AGENTS.md` (if missing)
 
 ---
 
@@ -125,10 +125,10 @@ The init script creates:
 
 Inside pi (with extension loaded), try this order:
 
-1. `gcc_context` (no args) — see current memory state
-2. `gcc_branch` with name + purpose — create exploration branch
+1. `memory_status` (no args) — see current memory state
+2. `memory_branch` with name + purpose — create exploration branch
 3. Do normal work (read/edit/test)
-4. `gcc_commit` with a summary — a subagent distills your log into a structured commit
+4. `memory_commit` with a summary — a subagent distills your log into a structured commit
 
 ---
 
@@ -148,13 +148,13 @@ Inside pi (with extension loaded), try this order:
 
 ## Common problems
 
-### "GCC not initialized. Run gcc-init.sh first."
+### "Brain not initialized. Run brain-init.sh first."
 
-You are in a project that does not have `.gcc/` yet. Ask the agent to initialize GCC, or load the `gcc` skill.
+You are in a project that does not have `.memory/` yet. Ask the agent to initialize Brain, or load the `brain` skill.
 
 ### I do not see notifications in print/json mode
 
-That is expected. In non-UI mode, verify by checking files in `.gcc/` and emitted events.
+That is expected. In non-UI mode, verify by checking files in `.memory/` and emitted events.
 
 ---
 
