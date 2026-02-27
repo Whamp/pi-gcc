@@ -1,7 +1,7 @@
-## GCC — Git Context Controller
+## Brain — Agent Memory
 
-This project uses GCC for agent memory management.
+This project uses Brain for agent memory management.
 
-**Start here when orienting:** Read `.gcc/main.md` for the project roadmap, key decisions, and open problems.
-Read `.gcc/AGENTS.md` for the full GCC protocol reference.
-Tools: gcc_commit, gcc_branch, gcc_merge, gcc_switch, gcc_context
+**Start here when orienting:** Read `.memory/main.md` for the project roadmap, key decisions, and open problems.
+Read `.memory/AGENTS.md` for the full Brain protocol reference.
+Tools: memory_commit, memory_branch, memory_merge, memory_switch, memory_status

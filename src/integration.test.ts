@@ -3,37 +3,37 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { BranchManager } from "./branches.js";
-import { executeGccBranch } from "./gcc-branch.js";
-import { executeGccCommit, finalizeGccCommit } from "./gcc-commit.js";
-import { executeGccContext } from "./gcc-context.js";
+import { executeMemoryBranch } from "./memory-branch.js";
+import { executeMemoryCommit, finalizeMemoryCommit } from "./memory-commit.js";
+import { executeMemoryStatus } from "./memory-context.js";
 import { formatOtaEntry } from "./ota-formatter.js";
-import { GccState } from "./state.js";
+import { MemoryState } from "./state.js";
 
 describe("integration", () => {
   it("should connect state, branches, commit flow, and context retrieval", () => {
     // Arrange
     const projectDir = fs.mkdtempSync(
-      path.join(os.tmpdir(), "gcc-integration-")
+      path.join(os.tmpdir(), "memory-integration-")
     );
 
     try {
-      const gccDir = path.join(projectDir, ".gcc");
-      fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
+      const memoryDir = path.join(projectDir, ".memory");
+      fs.mkdirSync(path.join(memoryDir, "branches"), { recursive: true });
       fs.writeFileSync(
-        path.join(gccDir, "state.yaml"),
+        path.join(memoryDir, "state.yaml"),
         ["active_branch: main", 'initialized: "2026-02-23T00:00:00Z"'].join(
           "\n"
         )
       );
 
-      const state = new GccState(projectDir);
+      const state = new MemoryState(projectDir);
       state.load();
 
       const branches = new BranchManager(projectDir);
       branches.createBranch("main", "Main development branch");
 
       // Act — create branch
-      const branchResult = executeGccBranch(
+      const branchResult = executeMemoryBranch(
         {
           name: "phase-3-hooks",
           purpose: "Implement hook extractors and extension wiring",
@@ -66,7 +66,7 @@ describe("integration", () => {
         })
       );
 
-      const commitResult = executeGccCommit(
+      const commitResult = executeMemoryCommit(
         { summary: "Implemented hook extractor modules" },
         state,
         branches
@@ -77,14 +77,14 @@ describe("integration", () => {
       expect(commitResult.task).toContain("Implemented hook extractor modules");
 
       // Act — finalize commit
-      const finalizeResult = finalizeGccCommit(
+      const finalizeResult = finalizeMemoryCommit(
         "Implemented hook extractor modules",
         [
           "### Branch Purpose",
-          "Implement GCC hook extractors and wiring.",
+          "Implement hook extractors and wiring.",
           "",
           "### Previous Progress Summary",
-          "Core GCC tools completed.",
+          "Core tools completed.",
           "",
           "### This Commit's Contribution",
           "Added ota-logger/context-injector and verified behavior.",
@@ -100,7 +100,7 @@ describe("integration", () => {
       expect(logAfterCommit).toBe("");
 
       // Act — retrieve context
-      const statusView = executeGccContext({}, state, branches, projectDir);
+      const statusView = executeMemoryStatus({}, state, branches, projectDir);
 
       // Assert — context contains commit info
       expect(statusView).toContain("phase-3-hooks");
@@ -108,13 +108,13 @@ describe("integration", () => {
         "Added ota-logger/context-injector and verified behavior."
       );
 
-      const ignoredLevelView = executeGccContext(
+      const ignoredLevelView = executeMemoryStatus(
         { level: "branch", branch: "phase-3-hooks" },
         state,
         branches,
         projectDir
       );
-      expect(ignoredLevelView).toContain("# GCC Status");
+      expect(ignoredLevelView).toContain("# Memory Status");
     } finally {
       fs.rmSync(projectDir, { recursive: true, force: true });
     }

@@ -87,16 +87,16 @@ describe("buildCommitterTask", () => {
 
     expect(task).toContain('branch "main"');
     expect(task).toContain("Fixed auth flow");
-    expect(task).toContain(".gcc/AGENTS.md");
-    expect(task).toContain(".gcc/branches/main/log.md");
-    expect(task).toContain(".gcc/branches/main/commits.md");
+    expect(task).toContain(".memory/AGENTS.md");
+    expect(task).toContain(".memory/branches/main/log.md");
+    expect(task).toContain(".memory/branches/main/commits.md");
   });
 
   it("should escape branch names with special characters", () => {
     const task = buildCommitterTask("feature/auth-fix", "Summary");
 
     expect(task).toContain("feature/auth-fix");
-    expect(task).toContain(".gcc/branches/feature/auth-fix/log.md");
+    expect(task).toContain(".memory/branches/feature/auth-fix/log.md");
   });
 });
 
@@ -356,7 +356,7 @@ describe("buildCommitterTask property-based tests", () => {
           const task = buildCommitterTask(branch, summary);
 
           // Assert
-          expect(task).toContain(".gcc/AGENTS.md");
+          expect(task).toContain(".memory/AGENTS.md");
           expect(task).toContain(`${branch}/log.md`);
           expect(task).toContain(`${branch}/commits.md`);
         }

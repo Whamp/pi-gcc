@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# gcc-init.sh — One-time GCC project initialization
-# Creates .gcc/ directory structure and appends GCC section to root AGENTS.md
+# brain-init.sh — One-time Brain memory initialization
+# Creates .memory/ directory structure and appends Brain section to root AGENTS.md
 # Idempotent: safe to run multiple times without clobbering existing content.
 
 set -euo pipefail
@@ -8,16 +8,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES_DIR="$SCRIPT_DIR/../templates"
 
-GCC_DIR=".gcc"
-BRANCHES_DIR="$GCC_DIR/branches/main"
-STATE_FILE="$GCC_DIR/state.yaml"
-GCC_AGENTS_FILE="$GCC_DIR/AGENTS.md"
-MAIN_MD_FILE="$GCC_DIR/main.md"
+MEMORY_DIR=".memory"
+BRANCHES_DIR="$MEMORY_DIR/branches/main"
+STATE_FILE="$MEMORY_DIR/state.yaml"
+MEMORY_AGENTS_FILE="$MEMORY_DIR/AGENTS.md"
+MAIN_MD_FILE="$MEMORY_DIR/main.md"
 ROOT_AGENTS_FILE="AGENTS.md"
 GITIGNORE_FILE=".gitignore"
-LOG_IGNORE_PATTERN=".gcc/branches/*/log.md"
+LOG_IGNORE_PATTERN=".memory/branches/*/log.md"
 
-# --- Create .gcc directory structure (skip if already exists) ---
+# --- Create .memory directory structure (skip if already exists) ---
 
 if [ ! -d "$BRANCHES_DIR" ]; then
   mkdir -p "$BRANCHES_DIR"
@@ -52,19 +52,19 @@ initialized: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 EOF
 fi
 
-# --- Write .gcc/AGENTS.md from template (always overwrite — it's a reference doc) ---
+# --- Write .memory/AGENTS.md from template (always overwrite — it's a reference doc) ---
 
 if [ -f "$TEMPLATES_DIR/agents-md.md" ]; then
-  cp "$TEMPLATES_DIR/agents-md.md" "$GCC_AGENTS_FILE"
+  cp "$TEMPLATES_DIR/agents-md.md" "$MEMORY_AGENTS_FILE"
 fi
 
-# --- Append GCC section to root AGENTS.md (idempotent) ---
+# --- Append Brain section to root AGENTS.md (idempotent) ---
 
 if [ ! -f "$ROOT_AGENTS_FILE" ]; then
   touch "$ROOT_AGENTS_FILE"
 fi
 
-if ! grep -q "## GCC" "$ROOT_AGENTS_FILE" 2>/dev/null; then
+if ! grep -q "## Brain" "$ROOT_AGENTS_FILE" 2>/dev/null; then
   if [ -s "$ROOT_AGENTS_FILE" ]; then
     echo "" >> "$ROOT_AGENTS_FILE"
   fi
@@ -84,4 +84,4 @@ if ! grep -Fxq "$LOG_IGNORE_PATTERN" "$GITIGNORE_FILE"; then
   echo "$LOG_IGNORE_PATTERN" >> "$GITIGNORE_FILE"
 fi
 
-echo "GCC initialized successfully."
+echo "Brain memory initialized successfully."

@@ -3,25 +3,25 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { BranchManager } from "./branches.js";
-import { executeGccSwitch } from "./gcc-switch.js";
-import { GccState } from "./state.js";
+import { executeMemorySwitch } from "./memory-switch.js";
+import { MemoryState } from "./state.js";
 
-describe("executeGccSwitch", () => {
+describe("executeMemorySwitch", () => {
   let tmpDir: string;
-  let state: GccState;
+  let state: MemoryState;
   let branches: BranchManager;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-switch-test-"));
-    const gccDir = path.join(tmpDir, ".gcc");
-    fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-switch-test-"));
+    const memoryDir = path.join(tmpDir, ".memory");
+    fs.mkdirSync(path.join(memoryDir, "branches"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       'active_branch: main\ninitialized: "2026-02-22T14:00:00Z"'
     );
 
-    state = new GccState(tmpDir);
+    state = new MemoryState(tmpDir);
     state.load();
     branches = new BranchManager(tmpDir);
     branches.createBranch("main", "Main branch");
@@ -34,7 +34,11 @@ describe("executeGccSwitch", () => {
 
   it("should switch to an existing branch", () => {
     // Act
-    const result = executeGccSwitch({ branch: "feature-x" }, state, branches);
+    const result = executeMemorySwitch(
+      { branch: "feature-x" },
+      state,
+      branches
+    );
 
     // Assert
     expect(state.activeBranch).toBe("feature-x");
@@ -48,7 +52,11 @@ describe("executeGccSwitch", () => {
     branches.appendCommit("feature-x", entry);
 
     // Act
-    const result = executeGccSwitch({ branch: "feature-x" }, state, branches);
+    const result = executeMemorySwitch(
+      { branch: "feature-x" },
+      state,
+      branches
+    );
 
     // Assert
     expect(result).toContain("Determined Redis is viable.");
@@ -56,7 +64,7 @@ describe("executeGccSwitch", () => {
 
   it("should reject switching to nonexistent branch", () => {
     // Act
-    const result = executeGccSwitch({ branch: "nope" }, state, branches);
+    const result = executeMemorySwitch({ branch: "nope" }, state, branches);
 
     // Assert
     expect(result).toContain("not found");

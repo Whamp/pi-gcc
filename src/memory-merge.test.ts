@@ -3,26 +3,26 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { BranchManager } from "./branches.js";
-import { executeGccMerge } from "./gcc-merge.js";
-import { GccState } from "./state.js";
+import { executeMemoryMerge } from "./memory-merge.js";
+import { MemoryState } from "./state.js";
 
-describe("executeGccMerge", () => {
+describe("executeMemoryMerge", () => {
   let tmpDir: string;
-  let state: GccState;
+  let state: MemoryState;
   let branches: BranchManager;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-merge-test-"));
-    const gccDir = path.join(tmpDir, ".gcc");
-    fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-merge-test-"));
+    const memoryDir = path.join(tmpDir, ".memory");
+    fs.mkdirSync(path.join(memoryDir, "branches"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(gccDir, "state.yaml"),
+      path.join(memoryDir, "state.yaml"),
       'active_branch: main\ninitialized: "2026-02-22T14:00:00Z"'
     );
     fs.writeFileSync(path.join(tmpDir, "AGENTS.md"), "# Project\n");
 
-    state = new GccState(tmpDir);
+    state = new MemoryState(tmpDir);
     state.load();
     branches = new BranchManager(tmpDir);
     branches.createBranch("main", "Main branch");
@@ -43,7 +43,7 @@ describe("executeGccMerge", () => {
 
   it("should append a merge commit to the current branch", () => {
     // Act
-    const result = executeGccMerge(
+    const result = executeMemoryMerge(
       {
         branch: "explore-redis",
         synthesis:
@@ -62,7 +62,7 @@ describe("executeGccMerge", () => {
 
   it("should generate a valid hash in the merge commit", () => {
     // Act
-    executeGccMerge(
+    executeMemoryMerge(
       { branch: "explore-redis", synthesis: "Redis is good." },
       state,
       branches
@@ -78,7 +78,7 @@ describe("executeGccMerge", () => {
     vi.setSystemTime(new Date("2026-02-22T16:00:00.000Z"));
 
     // Act
-    executeGccMerge(
+    executeMemoryMerge(
       { branch: "explore-redis", synthesis: "Merged Redis findings." },
       state,
       branches
@@ -96,7 +96,7 @@ describe("executeGccMerge", () => {
     const before = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
 
     // Act
-    executeGccMerge(
+    executeMemoryMerge(
       { branch: "explore-redis", synthesis: "Merged." },
       state,
       branches
@@ -109,7 +109,7 @@ describe("executeGccMerge", () => {
 
   it("should retain the merged branch (does not delete)", () => {
     // Act
-    executeGccMerge(
+    executeMemoryMerge(
       { branch: "explore-redis", synthesis: "Done." },
       state,
       branches
@@ -121,7 +121,7 @@ describe("executeGccMerge", () => {
 
   it("should reject merging a branch into itself", () => {
     // Act
-    const result = executeGccMerge(
+    const result = executeMemoryMerge(
       { branch: "main", synthesis: "Self merge." },
       state,
       branches
@@ -133,7 +133,7 @@ describe("executeGccMerge", () => {
 
   it("should reject merging a nonexistent branch", () => {
     // Act
-    const result = executeGccMerge(
+    const result = executeMemoryMerge(
       { branch: "nonexistent", synthesis: "Missing." },
       state,
       branches

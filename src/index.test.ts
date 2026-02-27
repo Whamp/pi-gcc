@@ -72,13 +72,15 @@ function setupInitializedProject(): {
   projectDir: string;
   cleanup: () => void;
 } {
-  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-index-test-"));
-  const gccDir = path.join(projectDir, ".gcc");
-  const branchDir = path.join(gccDir, "branches", "main");
+  const projectDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), "memory-index-test-")
+  );
+  const memoryDir = path.join(projectDir, ".memory");
+  const branchDir = path.join(memoryDir, "branches", "main");
 
   fs.mkdirSync(branchDir, { recursive: true });
   fs.writeFileSync(
-    path.join(gccDir, "state.yaml"),
+    path.join(memoryDir, "state.yaml"),
     [
       "active_branch: main",
       'initialized: "2026-02-23T00:00:00Z"',
@@ -116,7 +118,7 @@ function getFirstText(result: AgentToolResult<unknown> | undefined): string {
 }
 
 describe("extensionWiring", () => {
-  it("should register all GCC tools and required event handlers", () => {
+  it("should register all memory tools and required event handlers", () => {
     // Arrange
     const mockPi = createMockPi();
 
@@ -126,11 +128,11 @@ describe("extensionWiring", () => {
     // Assert
     const toolNames = mockPi.tools.map((t) => t.name);
     expect(toolNames).toHaveLength(5);
-    expect(toolNames).toContain("gcc_branch");
-    expect(toolNames).toContain("gcc_commit");
-    expect(toolNames).toContain("gcc_context");
-    expect(toolNames).toContain("gcc_merge");
-    expect(toolNames).toContain("gcc_switch");
+    expect(toolNames).toContain("memory_branch");
+    expect(toolNames).toContain("memory_commit");
+    expect(toolNames).toContain("memory_status");
+    expect(toolNames).toContain("memory_merge");
+    expect(toolNames).toContain("memory_switch");
 
     const handlerNames = mockPi.handlers.map((h) => h.event);
     expect(handlerNames).toContain("turn_end");
@@ -142,14 +144,14 @@ describe("extensionWiring", () => {
     expect(handlerNames).toContain("resources_discover");
   });
 
-  it("should return tool result shape and guard when GCC is uninitialized", async () => {
+  it("should return tool result shape and guard when memory is uninitialized", async () => {
     // Arrange
     const mockPi = createMockPi();
     activate(mockPi.api);
 
     const ui = createMockUi();
     const ctx = {
-      cwd: fs.mkdtempSync(path.join(os.tmpdir(), "gcc-uninit-")),
+      cwd: fs.mkdtempSync(path.join(os.tmpdir(), "memory-uninit-")),
       ui,
     } as unknown as ExtensionContext;
 
@@ -157,11 +159,11 @@ describe("extensionWiring", () => {
       const sessionStart = getHandler(mockPi.handlers, "session_start");
       await sessionStart?.({ type: "session_start" }, ctx);
 
-      const gccContext = mockPi.tools.find((t) => t.name === "gcc_context");
-      expect(gccContext).toBeDefined();
+      const memoryStatus = mockPi.tools.find((t) => t.name === "memory_status");
+      expect(memoryStatus).toBeDefined();
 
       // Act
-      const result = await gccContext?.execute(
+      const result = await memoryStatus?.execute(
         "tc1",
         { level: "status" },
         undefined,
@@ -172,7 +174,7 @@ describe("extensionWiring", () => {
       // Assert
       expect(result?.content[0]?.type).toBe("text");
       expect(result?.details).toStrictEqual({});
-      expect(getFirstText(result)).toContain("GCC not initialized");
+      expect(getFirstText(result)).toContain("Brain not initialized");
     } finally {
       fs.rmSync((ctx as { cwd: string }).cwd, { recursive: true, force: true });
     }
@@ -202,7 +204,7 @@ describe("extensionWiring", () => {
 
       // Assert
       const stateYaml = fs.readFileSync(
-        path.join(projectDir, ".gcc", "state.yaml"),
+        path.join(projectDir, ".memory", "state.yaml"),
         "utf8"
       );
 
@@ -224,7 +226,7 @@ describe("extensionWiring", () => {
 
       const logPath = path.join(
         projectDir,
-        ".gcc",
+        ".memory",
         "branches",
         "main",
         "log.md"
@@ -255,7 +257,7 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("should update the active session branch mapping after gcc_branch", async () => {
+  it("should update the active session branch mapping after memory_branch", async () => {
     // Arrange
     const { projectDir, cleanup } = setupInitializedProject();
     try {
@@ -274,11 +276,11 @@ describe("extensionWiring", () => {
       const sessionStart = getHandler(mockPi.handlers, "session_start");
       await sessionStart?.({ type: "session_start" }, ctx);
 
-      const gccBranch = mockPi.tools.find((t) => t.name === "gcc_branch");
-      expect(gccBranch).toBeDefined();
+      const memoryBranch = mockPi.tools.find((t) => t.name === "memory_branch");
+      expect(memoryBranch).toBeDefined();
 
       // Act
-      await gccBranch?.execute(
+      await memoryBranch?.execute(
         "tc-branch-sync",
         { name: "feature-x", purpose: "Investigate branch sync" },
         undefined,
@@ -288,7 +290,7 @@ describe("extensionWiring", () => {
 
       // Assert
       const stateYaml = fs.readFileSync(
-        path.join(projectDir, ".gcc", "state.yaml"),
+        path.join(projectDir, ".memory", "state.yaml"),
         "utf8"
       );
 
@@ -300,7 +302,7 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("should discover GCC skill path with ESM-safe resolution", async () => {
+  it("should discover Brain skill path with ESM-safe resolution", async () => {
     // Arrange
     const mockPi = createMockPi();
     activate(mockPi.api);
@@ -319,12 +321,14 @@ describe("extensionWiring", () => {
 
     // Assert
     expect(result?.skillPaths?.length).toBe(1);
-    expect(result?.skillPaths?.[0]).toContain("skills/gcc");
+    expect(result?.skillPaths?.[0]).toContain("skills/brain");
   });
 
-  it("should lazily load state when .gcc/ is created after session_start", async () => {
+  it("should lazily load state when .memory/ is created after session_start", async () => {
     // Arrange
-    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-lazy-init-"));
+    const projectDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "memory-lazy-init-")
+    );
 
     try {
       const mockPi = createMockPi();
@@ -339,27 +343,27 @@ describe("extensionWiring", () => {
         },
       } as unknown as ExtensionContext;
 
-      // session_start fires with no .gcc/ directory
+      // session_start fires with no .memory/ directory
       const sessionStart = getHandler(mockPi.handlers, "session_start");
       await sessionStart?.({ type: "session_start" }, ctx);
 
-      const gccContext = mockPi.tools.find((t) => t.name === "gcc_context");
+      const memoryStatus = mockPi.tools.find((t) => t.name === "memory_status");
 
-      // Tool returns "not initialized" before .gcc/ exists
-      const before = await gccContext?.execute(
+      // Tool returns "not initialized" before .memory/ exists
+      const before = await memoryStatus?.execute(
         "tc-lazy-before",
         {},
         undefined,
         undefined,
         ctx
       );
-      expect(getFirstText(before)).toContain("GCC not initialized");
+      expect(getFirstText(before)).toContain("Brain not initialized");
 
-      // Simulate mid-session init: create .gcc/ structure
-      const branchDir = path.join(projectDir, ".gcc", "branches", "main");
+      // Simulate mid-session init: create .memory/ structure
+      const branchDir = path.join(projectDir, ".memory", "branches", "main");
       fs.mkdirSync(branchDir, { recursive: true });
       fs.writeFileSync(
-        path.join(projectDir, ".gcc", "state.yaml"),
+        path.join(projectDir, ".memory", "state.yaml"),
         ["active_branch: main", 'initialized: "2026-02-25T00:00:00Z"'].join(
           "\n"
         )
@@ -372,7 +376,7 @@ describe("extensionWiring", () => {
       fs.writeFileSync(path.join(branchDir, "metadata.yaml"), "");
 
       // Act
-      const after = await gccContext?.execute(
+      const after = await memoryStatus?.execute(
         "tc-lazy-after",
         {},
         undefined,
@@ -381,11 +385,11 @@ describe("extensionWiring", () => {
       );
 
       // Assert
-      expect(getFirstText(after)).not.toContain("GCC not initialized");
+      expect(getFirstText(after)).not.toContain("Brain not initialized");
       expect(getFirstText(after)).toContain("Active branch: main");
 
       const stateYaml = fs.readFileSync(
-        path.join(projectDir, ".gcc", "state.yaml"),
+        path.join(projectDir, ".memory", "state.yaml"),
         "utf8"
       );
       expect(stateYaml).toContain("/tmp/pi-session-lazy.jsonl");
@@ -394,7 +398,7 @@ describe("extensionWiring", () => {
     }
   });
 
-  it("should return error from gcc_commit when subagent fails", async () => {
+  it("should return error from memory_commit when subagent fails", async () => {
     // Arrange
     const { projectDir, cleanup } = setupInitializedProject();
     try {
@@ -413,14 +417,14 @@ describe("extensionWiring", () => {
       const sessionStart = getHandler(mockPi.handlers, "session_start");
       await sessionStart?.({ type: "session_start" }, ctx);
 
-      const gccCommit = mockPi.tools.find((t) => t.name === "gcc_commit");
-      expect(gccCommit).toBeDefined();
+      const memoryCommit = mockPi.tools.find((t) => t.name === "memory_commit");
+      expect(memoryCommit).toBeDefined();
 
       const controller = new AbortController();
       controller.abort();
 
       // Act
-      const result = await gccCommit?.execute(
+      const result = await memoryCommit?.execute(
         "tc-commit",
         { summary: "Test commit" },
         controller.signal,

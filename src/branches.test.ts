@@ -11,7 +11,7 @@ describe("branchManager", () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gcc-branch-test-"));
-    gccDir = path.join(tmpDir, ".gcc");
+    gccDir = path.join(tmpDir, ".memory");
     fs.mkdirSync(path.join(gccDir, "branches"), { recursive: true });
     manager = new BranchManager(tmpDir);
   });
@@ -116,7 +116,7 @@ describe("branchManager", () => {
   });
 
   describe("listBranches", () => {
-    it("should list only directories in .gcc/branches/", () => {
+    it("should list only directories in .memory/branches/", () => {
       // Arrange
       manager.createBranch("main", "Main branch");
       manager.createBranch("feature-a", "Feature A");
