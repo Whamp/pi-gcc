@@ -16,7 +16,7 @@ pi install npm:pi-brain
 
 Open pi in any project and say "initialize Brain" (or run `/skill:brain`). The agent creates `.memory/` and starts remembering.
 
-That's it. The agent decides when to commit, branch, and merge — you don't need to manage anything.
+That's it. The agent decides when to commit, branch, and merge — you don't **need** to manage anything. However, you can always prompt the agent to remember something specific if you'd like. 
 
 ## How It Works
 
