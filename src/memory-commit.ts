@@ -1,9 +1,9 @@
 import type { BranchManager } from "./branches.js";
 import { generateHash } from "./hash.js";
-import type { GccState } from "./state.js";
+import type { MemoryState } from "./state.js";
 import { buildCommitterTask } from "./subagent.js";
 
-interface GccCommitParams {
+interface MemoryCommitParams {
   summary: string;
   update_roadmap?: boolean;
 }
@@ -12,9 +12,9 @@ interface GccCommitParams {
  * Build the subagent task string for commit distillation.
  * The subagent reads log.md and commits.md itself.
  */
-export function executeGccCommit(
-  params: GccCommitParams,
-  state: GccState,
+export function executeMemoryCommit(
+  params: MemoryCommitParams,
+  state: MemoryState,
   _branches: BranchManager
 ): { task: string } {
   const branch = state.activeBranch;
@@ -28,10 +28,10 @@ export function executeGccCommit(
  * Step 2: Write the agent's commit content to commits.md,
  * clear log.md, and update state.
  */
-export function finalizeGccCommit(
+export function finalizeMemoryCommit(
   summary: string,
   commitContent: string,
-  state: GccState,
+  state: MemoryState,
   branches: BranchManager
 ): string {
   const branch = state.activeBranch;

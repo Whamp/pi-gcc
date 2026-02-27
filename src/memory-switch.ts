@@ -1,16 +1,16 @@
 import type { BranchManager } from "./branches.js";
-import type { GccState } from "./state.js";
+import type { MemoryState } from "./state.js";
 
-interface GccSwitchParams {
+interface MemorySwitchParams {
   branch: string;
 }
 
 /**
- * Execute the gcc_switch tool — switch the active GCC branch.
+ * Execute the memory_switch tool — switch the active memory branch.
  */
-export function executeGccSwitch(
-  params: GccSwitchParams,
-  state: GccState,
+export function executeMemorySwitch(
+  params: MemorySwitchParams,
+  state: MemoryState,
   branches: BranchManager
 ): string {
   const { branch } = params;

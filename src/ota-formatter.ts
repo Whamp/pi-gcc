@@ -1,6 +1,6 @@
 /**
  * Formats OTA (Observation-Thought-Action) log entries for log.md.
- * Follows the GCC spec format with full fidelity.
+ * Follows the Brain spec format with full fidelity.
  */
 
 import type { OtaEntryInput } from "./types.js";

@@ -3,8 +3,8 @@ import * as path from "node:path";
 
 import type { BranchManager } from "./branches.js";
 import { LOG_SIZE_WARNING_BYTES } from "./constants.js";
-import type { GccState } from "./state.js";
-import type { GccContextParams } from "./types.js";
+import type { MemoryState } from "./state.js";
+import type { MemoryStatusParams } from "./types.js";
 
 function extractCommitSummaryLine(commitEntry: string): string {
   const marker = "### This Commit's Contribution";
@@ -31,26 +31,26 @@ function extractCommitSummaryLine(commitEntry: string): string {
 }
 
 function buildStatusView(
-  state: GccState,
+  state: MemoryState,
   branches: BranchManager,
   projectDir: string
 ): string {
-  const lines = ["# GCC Status", ""];
+  const lines = ["# Memory Status", ""];
 
-  const mainMdPath = path.join(projectDir, ".gcc", "main.md");
+  const mainMdPath = path.join(projectDir, ".memory", "main.md");
   if (fs.existsSync(mainMdPath)) {
     const roadmap = fs.readFileSync(mainMdPath, "utf8").trim();
     if (roadmap) {
       lines.push(roadmap, "");
     } else {
       lines.push(
-        "Roadmap is empty. Update `.gcc/main.md` with project goals and current state.",
+        "Roadmap is empty. Update `.memory/main.md` with project goals and current state.",
         ""
       );
     }
   } else {
     lines.push(
-      "No roadmap found. Create `.gcc/main.md` to set project goals.",
+      "No roadmap found. Create `.memory/main.md` to set project goals.",
       ""
     );
   }
@@ -84,22 +84,22 @@ function buildStatusView(
   }
 
   lines.push("## Deep Retrieval", "");
-  lines.push("Use `read .gcc/branches/<name>/commits.md` for full history.");
-  lines.push("Use `read .gcc/branches/<name>/log.md` for OTA trace.");
-  lines.push("Use `read .gcc/branches/<name>/metadata.yaml` for metadata.");
-  lines.push("Use `read .gcc/main.md` for roadmap.");
-  lines.push("Use `read .gcc/AGENTS.md` for protocol details.");
+  lines.push("Use `read .memory/branches/<name>/commits.md` for full history.");
+  lines.push("Use `read .memory/branches/<name>/log.md` for OTA trace.");
+  lines.push("Use `read .memory/branches/<name>/metadata.yaml` for metadata.");
+  lines.push("Use `read .memory/main.md` for roadmap.");
+  lines.push("Use `read .memory/AGENTS.md` for protocol details.");
 
   return lines.join("\n");
 }
 
 /**
- * Execute the gcc_context tool — status overview.
+ * Execute the memory_status tool — status overview.
  * Additional parameters are accepted for backward compatibility but ignored.
  */
-export function executeGccContext(
-  _params: GccContextParams,
-  state: GccState,
+export function executeMemoryStatus(
+  _params: MemoryStatusParams,
+  state: MemoryState,
   branches: BranchManager,
   projectDir: string
 ): string {
