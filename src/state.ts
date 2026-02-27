@@ -21,17 +21,17 @@ type PersistedValue =
   | Record<string, string>
   | Array<Record<string, string>>;
 
-export class GccState {
+export class MemoryState {
   private readonly statePath: string;
-  private readonly gccDir: string;
+  private readonly memoryDir: string;
   activeBranch = "main";
   initialized = "";
   lastCommit: LastCommit | null = null;
   sessions: SessionRecord[] = [];
 
   constructor(projectDir: string) {
-    this.gccDir = path.join(projectDir, ".gcc");
-    this.statePath = path.join(this.gccDir, "state.yaml");
+    this.memoryDir = path.join(projectDir, ".memory");
+    this.statePath = path.join(this.memoryDir, "state.yaml");
   }
 
   get isInitialized(): boolean {
