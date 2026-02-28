@@ -1,6 +1,25 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+function sortBranchNames(names: readonly string[]): string[] {
+  const sorted: string[] = [];
+
+  for (const name of names) {
+    const insertIndex = sorted.findIndex(
+      (existing) => existing.localeCompare(name) > 0
+    );
+
+    if (insertIndex === -1) {
+      sorted.push(name);
+      continue;
+    }
+
+    sorted.splice(insertIndex, 0, name);
+  }
+
+  return sorted;
+}
+
 /**
  * Manages `.memory/branches/` directory operations.
  * Each branch has: log.md, commits.md, metadata.yaml.
@@ -64,18 +83,21 @@ export class BranchManager {
     return fs.readFileSync(metaPath, "utf8");
   }
 
+  protected readBranchEntries(): string[] {
+    return fs.readdirSync(this.branchesDir);
+  }
+
   listBranches(): string[] {
     if (!fs.existsSync(this.branchesDir)) {
       return [];
     }
 
-    return fs
-      .readdirSync(this.branchesDir)
-      .filter((entry) => {
-        const fullPath = path.join(this.branchesDir, entry);
-        return fs.statSync(fullPath).isDirectory();
-      })
-      .toSorted((a, b) => a.localeCompare(b));
+    const branchNames = this.readBranchEntries().filter((entry) => {
+      const fullPath = path.join(this.branchesDir, entry);
+      return fs.statSync(fullPath).isDirectory();
+    });
+
+    return sortBranchNames(branchNames);
   }
 
   branchExists(name: string): boolean {

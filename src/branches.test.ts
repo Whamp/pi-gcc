@@ -140,16 +140,36 @@ describe("branchManager", () => {
     });
 
     it("should return branches in sorted order for deterministic status output", () => {
-      // Arrange — create in reverse-alphabetical order
+      class BranchManagerWithCustomEntries extends BranchManager {
+        private readonly entries: readonly string[];
+
+        constructor(projectDir: string, entries: readonly string[]) {
+          super(projectDir);
+          this.entries = entries;
+        }
+
+        protected override readBranchEntries(): string[] {
+          return [...this.entries];
+        }
+      }
+
+      // Arrange
       manager.createBranch("zeta", "Zeta");
       manager.createBranch("alpha", "Alpha");
       manager.createBranch("main", "Main");
       manager.createBranch("beta", "Beta");
 
-      // Act
-      const branches = manager.listBranches();
+      const customOrderManager = new BranchManagerWithCustomEntries(tmpDir, [
+        "zeta",
+        "main",
+        "beta",
+        "alpha",
+      ]);
 
-      // Assert — must be alphabetically sorted regardless of creation order
+      // Act
+      const branches = customOrderManager.listBranches();
+
+      // Assert
       expect(branches).toStrictEqual(["alpha", "beta", "main", "zeta"]);
     });
   });

@@ -271,7 +271,8 @@ describe("cache safety invariants", () => {
             );
 
             const branches = new BranchManager(projectDir);
-            for (const name of [...extraBranches].toReversed()) {
+            for (let i = extraBranches.length - 1; i >= 0; i--) {
+              const name = extraBranches[i];
               branches.createBranch(name, `Purpose ${name}`);
             }
 
