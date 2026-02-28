@@ -49,9 +49,10 @@ LLM providers cache the prefix of each request. If the prefix changes between tu
 Brain avoids this entirely:
 
 - **Static AGENTS.md** — Written once at init, never updated. No branch names, no commit counts, no dynamic state. The system prompt prefix stays identical across every turn and session.
-- **No per-turn injection** — No `before_agent_start` hook, no changing content before the conversation. The agent retrieves memory on demand via tool calls, which appear as conversation messages appended at the end (outside the cached prefix).
-- **Fixed tool definitions** — All five tools are registered at startup with static schemas. No tools added or removed mid-conversation.
+- **No per-turn prompt mutation** — Brain does not rewrite `systemPrompt` between turns. Status context is appended as message content, keeping the cached prefix stable.
+- **Fixed tool definitions** — Tool schemas are static at startup. No tools are added or removed mid-conversation.
 - **Subagent isolation** — Commit distillation runs in a separate API call with its own cache. The main agent's cache is never touched.
+- **Regression-tested safety** — Prompt-cache safety invariants are covered in `src/cache-safety.test.ts` (property tests for append-only prompt behavior, lifecycle-gated status injection, and deterministic status rendering).
 
 The result: Brain adds zero overhead to your prompt cache hit rate.
 

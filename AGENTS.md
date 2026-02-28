@@ -67,6 +67,7 @@ Agent guide for this repository.
 6. **Log size warning**: when `log.md` exceeds 600 KB (~150-175k tokens), the extension warns in `session_start` and `memory_status` output, nudging the agent to commit.
 7. `resources_discover` returns Brain skill path using ESM-safe path resolution (`import.meta.url`).
 8. `session_before_compact` is best-effort (mutates `event.customInstructions` in place).
+9. Prompt-cache safety is regression-tested in `src/cache-safety.test.ts`, including append-only prompt handling, lifecycle-gated status injection, and deterministic status rendering.
 
 ## 6) Coding Constraints Specific to This Repo
 
