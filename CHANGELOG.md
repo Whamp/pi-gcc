@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.1.5
+
+[compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.3...v0.1.5)
+
+### 🚀 Enhancements
+
+- Consolidate branch/switch/merge into single memory_branch tool ([9e8e3a5](https://github.com/Whamp/pi-brain/commit/9e8e3a5))
+- Append status view to memory_branch and memory_commit results ([39ebed7](https://github.com/Whamp/pi-brain/commit/39ebed7))
+- Inject status via before_agent_start hook, remove memory_status tool ([812e644](https://github.com/Whamp/pi-brain/commit/812e644))
+- Roadmap update reminder after every memory commit ([127acfc](https://github.com/Whamp/pi-brain/commit/127acfc))
+
+### 🩹 Fixes
+
+- Use setStatus for persistent Brain footer status ([1d49a5f](https://github.com/Whamp/pi-brain/commit/1d49a5f))
+- Bound status injection and keep footer state fresh ([c350923](https://github.com/Whamp/pi-brain/commit/c350923))
+- Sort branch listing for deterministic memory status ([8ffb390](https://github.com/Whamp/pi-brain/commit/8ffb390))
+
+### 💅 Refactors
+
+- Export buildStatusView, remove executeMemoryStatus ([629e5d2](https://github.com/Whamp/pi-brain/commit/629e5d2))
+- Remove old switch/merge/status modules and types ([a37ad0d](https://github.com/Whamp/pi-brain/commit/a37ad0d))
+
+### 📖 Documentation
+
+- Add tool consolidation implementation plan ([cec355c](https://github.com/Whamp/pi-brain/commit/cec355c))
+- Update plan — keep skill global, remove init script task ([0ec89cb](https://github.com/Whamp/pi-brain/commit/0ec89cb))
+- Update plan — robust statusInjected flag with lifecycle resets ([13e3185](https://github.com/Whamp/pi-brain/commit/13e3185))
+- Update templates, skill, and init tests for 2-tool surface ([8f81599](https://github.com/Whamp/pi-brain/commit/8f81599))
+- Note prompt cache safety regression tests ([4c0bc08](https://github.com/Whamp/pi-brain/commit/4c0bc08))
+
+### 🏡 Chore
+
+- Commit plan and state updates ([1e413a8](https://github.com/Whamp/pi-brain/commit/1e413a8))
+- Update brain memory state ([85592cd](https://github.com/Whamp/pi-brain/commit/85592cd))
+- **release:** V0.1.4 ([ffc21a5](https://github.com/Whamp/pi-brain/commit/ffc21a5))
+
+### ✅ Tests
+
+- Add property-based invariants for compact status view ([81d7a49](https://github.com/Whamp/pi-brain/commit/81d7a49))
+- Add cache-safety property test harness ([0d9ac88](https://github.com/Whamp/pi-brain/commit/0d9ac88))
+- Enforce append-only before_agent_start cache contract ([19f915d](https://github.com/Whamp/pi-brain/commit/19f915d))
+- Add lifecycle state-machine property for brain status injection ([bb35d61](https://github.com/Whamp/pi-brain/commit/bb35d61))
+- Add deterministic status rendering property tests ([625226f](https://github.com/Whamp/pi-brain/commit/625226f))
+- Add cache-safety property suite and deterministic branch ordering ([b13537d](https://github.com/Whamp/pi-brain/commit/b13537d))
+
+### ❤️ Contributors
+
+- Will Hampson <will@ggl.slmail.me>
+
 ## v0.1.4
 
 [compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.3...v0.1.4)
