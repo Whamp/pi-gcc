@@ -1,6 +1,6 @@
 {
   "name": "pi-brain",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Versioned memory extension for the pi coding agent",
   "keywords": [
     "agent-memory",
