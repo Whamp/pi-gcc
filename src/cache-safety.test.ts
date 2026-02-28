@@ -110,4 +110,45 @@ describe("cache safety invariants", () => {
       fc.assert(fc.property(fc.boolean(), (b) => typeof b === "boolean"))
     ).not.toThrow();
   });
+
+  it("before_agent_start never returns systemPrompt (append-only contract)", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.string(), async (prompt) => {
+        const { projectDir, cleanup } = setupInitializedProject();
+        try {
+          const mockPi = createMockPi();
+          activate(mockPi.api);
+
+          const beforeStart = mockPi.handlers.find(
+            (h) => h.event === "before_agent_start"
+          )?.handler;
+          const sessionStart = mockPi.handlers.find(
+            (h) => h.event === "session_start"
+          )?.handler;
+
+          const ctx = {
+            cwd: projectDir,
+            ui: { notify() {}, setStatus() {} },
+            sessionManager: {
+              getSessionFile: () => "/tmp/pi-cache-safety.jsonl",
+            },
+          } as unknown as ExtensionContext;
+
+          await sessionStart?.({ type: "session_start" }, ctx);
+
+          const result = (await beforeStart?.(
+            { type: "before_agent_start", prompt, systemPrompt: "base" },
+            ctx
+          )) as { systemPrompt?: string; message?: unknown } | undefined;
+
+          // The handler may return undefined or a result with message,
+          // but must never include systemPrompt (append-only contract).
+          expect(result?.systemPrompt).toBeUndefined();
+        } finally {
+          cleanup();
+        }
+      }),
+      { numRuns: 60 }
+    );
+  });
 });
