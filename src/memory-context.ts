@@ -4,7 +4,6 @@ import * as path from "node:path";
 import type { BranchManager } from "./branches.js";
 import { LOG_SIZE_WARNING_BYTES } from "./constants.js";
 import type { MemoryState } from "./state.js";
-import type { MemoryStatusParams } from "./types.js";
 
 function extractCommitSummaryLine(commitEntry: string): string {
   const marker = "### This Commit's Contribution";
@@ -30,7 +29,7 @@ function extractCommitSummaryLine(commitEntry: string): string {
   return "(unknown)";
 }
 
-function buildStatusView(
+export function buildStatusView(
   state: MemoryState,
   branches: BranchManager,
   projectDir: string
@@ -91,17 +90,4 @@ function buildStatusView(
   lines.push("Use `read .memory/AGENTS.md` for protocol details.");
 
   return lines.join("\n");
-}
-
-/**
- * Execute the memory_status tool — status overview.
- * Additional parameters are accepted for backward compatibility but ignored.
- */
-export function executeMemoryStatus(
-  _params: MemoryStatusParams,
-  state: MemoryState,
-  branches: BranchManager,
-  projectDir: string
-): string {
-  return buildStatusView(state, branches, projectDir);
 }

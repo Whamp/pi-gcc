@@ -4,7 +4,7 @@ import * as path from "node:path";
 
 import { BranchManager } from "./branches.js";
 import { LOG_SIZE_WARNING_BYTES } from "./constants.js";
-import { executeMemoryStatus } from "./memory-context.js";
+import { buildStatusView } from "./memory-context.js";
 import { MemoryState } from "./state.js";
 
 // Helpers
@@ -32,7 +32,7 @@ function setupMemoryProject(): {
   return { tmpDir, state, branches };
 }
 
-describe("executeMemoryStatus", () => {
+describe("buildStatusView", () => {
   let tmpDir: string;
   let state: MemoryState;
   let branches: BranchManager;
@@ -48,7 +48,7 @@ describe("executeMemoryStatus", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("should return status overview when called with empty params", () => {
+  it("should return status overview with roadmap and branches", () => {
     // Arrange
     fs.writeFileSync(
       path.join(tmpDir, ".memory/main.md"),
@@ -60,7 +60,7 @@ describe("executeMemoryStatus", () => {
     );
 
     // Act
-    const result = executeMemoryStatus({}, state, branches, tmpDir);
+    const result = buildStatusView(state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("# Memory Status");
@@ -74,7 +74,7 @@ describe("executeMemoryStatus", () => {
 
   it("should handle missing main.md gracefully", () => {
     // Act
-    const result = executeMemoryStatus({}, state, branches, tmpDir);
+    const result = buildStatusView(state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("No roadmap found");
@@ -86,27 +86,11 @@ describe("executeMemoryStatus", () => {
     fs.writeFileSync(path.join(tmpDir, ".memory/main.md"), "\n\n");
 
     // Act
-    const result = executeMemoryStatus({}, state, branches, tmpDir);
+    const result = buildStatusView(state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("Roadmap is empty");
     expect(result).toContain("Update `.memory/main.md` with project goals");
-  });
-
-  it("should ignore unsupported level params and still return status", () => {
-    // Act
-    const result = executeMemoryStatus(
-      { level: "branch", branch: "main", commit: "deadbeef", segment: "x" },
-      state,
-      branches,
-      tmpDir
-    );
-
-    // Assert
-    expect(result).toContain("# Memory Status");
-    expect(result).toContain(
-      "Use `read .memory/branches/<name>/commits.md` for full history."
-    );
   });
 
   it("should warn when log.md exceeds size threshold", () => {
@@ -115,7 +99,7 @@ describe("executeMemoryStatus", () => {
     branches.appendLog("main", "x".repeat(LOG_SIZE_WARNING_BYTES + 1));
 
     // Act
-    const result = executeMemoryStatus({}, state, branches, tmpDir);
+    const result = buildStatusView(state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("**Warning:**");
@@ -129,7 +113,7 @@ describe("executeMemoryStatus", () => {
     branches.appendLog("main", "x".repeat(1000));
 
     // Act
-    const result = executeMemoryStatus({}, state, branches, tmpDir);
+    const result = buildStatusView(state, branches, tmpDir);
 
     // Assert
     expect(result).not.toContain("**Warning:**");
@@ -143,7 +127,7 @@ describe("executeMemoryStatus", () => {
     branches.appendCommit("feature-a", entry);
 
     // Act
-    const result = executeMemoryStatus({}, state, branches, tmpDir);
+    const result = buildStatusView(state, branches, tmpDir);
 
     // Assert
     expect(result).toContain("feature-a");
