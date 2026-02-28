@@ -4,13 +4,18 @@ This directory contains your project's agent memory, managed by the Brain extens
 
 ## Tools
 
-| Tool            | Purpose                                 |
-| --------------- | --------------------------------------- |
-| `memory_commit` | Checkpoint a milestone in understanding |
-| `memory_branch` | Create a memory branch for exploration  |
-| `memory_merge`  | Synthesize branch conclusions           |
-| `memory_status` | Multi-resolution retrieval of memory    |
-| `memory_switch` | Switch active memory branch             |
+| Tool            | Purpose                                   |
+| --------------- | ----------------------------------------- |
+| `memory_commit` | Checkpoint a milestone in understanding   |
+| `memory_branch` | Manage branches: create, switch, or merge |
+
+### memory_branch Actions
+
+| Action   | Required Params       | Description                                 |
+| -------- | --------------------- | ------------------------------------------- |
+| `create` | `name`, `purpose`     | Create a new branch and switch to it        |
+| `switch` | `branch`              | Switch active memory branch                 |
+| `merge`  | `branch`, `synthesis` | Synthesize a branch's insights into current |
 
 ## File Structure
 
@@ -41,4 +46,4 @@ The latest commit always contains a self-contained summary of the full branch hi
 - **Decisions over details**: Capture "why", not "what" — git tracks file changes
 - **Rolling summaries**: Each commit re-synthesizes all prior progress
 - **No direct log.md writes**: The extension maintains log.md automatically
-- **Call `memory_status` first**: Always review context before merging or starting new work
+- **Status is automatic**: Memory status is injected at session start and appended to tool results

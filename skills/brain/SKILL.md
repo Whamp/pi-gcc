@@ -1,6 +1,6 @@
 ---
 name: brain
-description: Use when working on a project with Brain agent memory management. Triggers on memory_status, memory_commit, memory_branch, memory_merge, memory_switch tool usage, or when the project has a .memory/ directory.
+description: Use when working on a project with Brain agent memory management. Triggers on memory_commit, memory_branch tool usage, or when the project has a .memory/ directory.
 ---
 
 # Brain — Agent Memory
@@ -20,8 +20,7 @@ Replace `/absolute/path/to/skills/brain` with the skill directory shown in the
 ### After Init
 
 1. **Write `.memory/main.md`** — the project roadmap (see below).
-2. **Call `memory_status`** to verify Brain is active.
-3. **Make your first commit** when you reach a meaningful milestone.
+2. **Make your first commit** when you reach a meaningful milestone.
 
 > **Note:** No `/reload` is needed. The memory tools lazily detect `.memory/`
 > on every call via `tryLoad()`.
@@ -39,6 +38,20 @@ questions as you understand them from conversation with the user.
 
 Then write the roadmap covering: project purpose, current state, key decisions
 already made, completed milestones, and planned work.
+
+## Context Retrieval
+
+Memory status is **automatically injected** at session start (via the
+`before_agent_start` hook) and appended to every successful `memory_branch` and
+`memory_commit` result. You do not need to call a separate tool to see status.
+
+For deep retrieval, use `read` directly:
+
+- `read .memory/branches/<name>/commits.md` — full branch history
+- `read .memory/branches/<name>/log.md` — OTA trace since last commit
+- `read .memory/branches/<name>/metadata.yaml` — structured metadata
+- `read .memory/main.md` — project roadmap
+- `read .memory/AGENTS.md` — full protocol reference
 
 ## When to Commit
 
@@ -73,28 +86,6 @@ then produces the structured commit entry. You just provide a good `summary` str
 - The branch's findings should inform the main line of thinking
 - Include what was learned even if the approach was abandoned
 
-**Important:** Always review the source branch history BEFORE calling `memory_merge`.
-Use:
-
-- `memory_status` for high-level status
-- `read .memory/branches/<target>/commits.md` for full branch history
-
+**Important:** Always review the source branch history BEFORE calling merge.
+Use `read .memory/branches/<target>/commits.md` for full branch history.
 You need the full context to write a good synthesis.
-
-## When to Use Context Retrieval
-
-- Starting a new session on an existing project — call `memory_status` first
-- Before making a decision that might conflict with earlier reasoning
-- When you need to recall the rationale behind a previous decision
-
-## Context Retrieval
-
-Use `memory_status` for high-level status only.
-
-For deep retrieval, use `read` directly:
-
-- `read .memory/branches/<name>/commits.md` — full branch history
-- `read .memory/branches/<name>/log.md` — OTA trace since last commit
-- `read .memory/branches/<name>/metadata.yaml` — structured metadata
-- `read .memory/main.md` — project roadmap
-- `read .memory/AGENTS.md` — full protocol reference

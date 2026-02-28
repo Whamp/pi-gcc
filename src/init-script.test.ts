@@ -60,7 +60,7 @@ describe("brain-init.sh", () => {
     const agents = fs.readFileSync(path.join(tmpDir, "AGENTS.md"), "utf8");
     expect(agents).toContain("## Brain");
     expect(agents).toContain(
-      "Tools: memory_commit, memory_branch, memory_merge, memory_switch, memory_status"
+      "Tools: memory_commit, memory_branch (create/switch/merge)"
     );
     expect(agents).not.toContain("Current branch:");
   });
@@ -130,8 +130,8 @@ describe("brain-init.sh", () => {
     );
     expect(memoryAgents).toContain("memory_commit");
     expect(memoryAgents).toContain("memory_branch");
-    expect(memoryAgents).toContain("memory_status");
-    expect(memoryAgents).toContain("memory_merge");
-    expect(memoryAgents).toContain("memory_switch");
+    expect(memoryAgents).toContain("create");
+    expect(memoryAgents).toContain("switch");
+    expect(memoryAgents).toContain("merge");
   });
 });
