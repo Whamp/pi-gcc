@@ -69,10 +69,13 @@ export class BranchManager {
       return [];
     }
 
-    return fs.readdirSync(this.branchesDir).filter((entry) => {
-      const fullPath = path.join(this.branchesDir, entry);
-      return fs.statSync(fullPath).isDirectory();
-    });
+    return fs
+      .readdirSync(this.branchesDir)
+      .filter((entry) => {
+        const fullPath = path.join(this.branchesDir, entry);
+        return fs.statSync(fullPath).isDirectory();
+      })
+      .toSorted((a, b) => a.localeCompare(b));
   }
 
   branchExists(name: string): boolean {

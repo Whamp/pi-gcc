@@ -138,6 +138,20 @@ describe("branchManager", () => {
       // Act + Assert
       expect(manager.listBranches()).toStrictEqual([]);
     });
+
+    it("should return branches in sorted order for deterministic status output", () => {
+      // Arrange — create in reverse-alphabetical order
+      manager.createBranch("zeta", "Zeta");
+      manager.createBranch("alpha", "Alpha");
+      manager.createBranch("main", "Main");
+      manager.createBranch("beta", "Beta");
+
+      // Act
+      const branches = manager.listBranches();
+
+      // Assert — must be alphabetically sorted regardless of creation order
+      expect(branches).toStrictEqual(["alpha", "beta", "main", "zeta"]);
+    });
   });
 
   describe("getLogTurnCount", () => {
