@@ -63,7 +63,6 @@
     "vitest": "^4.0.18"
   },
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*",
     "@sinclair/typebox": "*"
   },
   "pnpm": {
