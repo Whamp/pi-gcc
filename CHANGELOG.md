@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.1.6
+
+[compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.5...v0.1.6)
+
+### 🩹 Fixes
+
+- Improve roadmap update guidance — curate, don't just append ([f86caa0](https://github.com/Whamp/pi-brain/commit/f86caa0))
+- Freeze before_agent_start systemPrompt snapshot across epochs ([16b83ec](https://github.com/Whamp/pi-brain/commit/16b83ec))
+
+### ❤️ Contributors
+
+- Will Hampson <will@ggl.slmail.me>
+
 ## v0.1.5
 
 [compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.3...v0.1.5)
