@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.1.7
+
+[compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.6...v0.1.7)
+
+### 🏡 Chore
+
+- Remove pi-coding-agent peer dependency ([2045302](https://github.com/Whamp/pi-brain/commit/2045302))
+
+### ❤️ Contributors
+
+- Will Hampson <will@ggl.slmail.me>
+
 ## v0.1.6
 
 [compare changes](https://github.com/Whamp/pi-brain/compare/v0.1.5...v0.1.6)
