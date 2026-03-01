@@ -163,6 +163,27 @@ function collectKeyPaths(value: unknown, prefix = ""): string[] {
   return paths;
 }
 
+function writeRoadmap(projectDir: string, body: string): void {
+  fs.writeFileSync(path.join(projectDir, ".memory", "main.md"), body);
+}
+
+function readInjectedSystemPrompt(
+  result: { systemPrompt?: string } | undefined
+): string {
+  expect(result).toBeDefined();
+  expect(result?.systemPrompt).toBeDefined();
+  return result?.systemPrompt ?? "";
+}
+
+function extractFrozenSnapshot(
+  injectedPrompt: string,
+  basePrompt: string
+): string {
+  const prefix = `${basePrompt}\n\n`;
+  expect(injectedPrompt.startsWith(prefix)).toBeTruthy();
+  return injectedPrompt.slice(prefix.length);
+}
+
 describe("extensionWiring", () => {
   it("should register 2 memory tools and required event handlers", () => {
     // Arrange
@@ -708,6 +729,96 @@ describe("extensionWiring", () => {
     }
   });
 
+  it("should freeze lazy-init snapshot after first successful before_agent_start", async () => {
+    // Arrange
+    const projectDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "memory-lazy-snapshot-")
+    );
+
+    try {
+      const mockPi = createMockPi();
+      activate(mockPi.api);
+
+      const ctx = createCtx(projectDir, {
+        sessionFile: "/tmp/pi-session-lazy-snapshot.jsonl",
+      });
+      const sessionStart = getHandler(mockPi.handlers, "session_start");
+      const beforeStart = getHandler(mockPi.handlers, "before_agent_start");
+      expect(beforeStart).toBeDefined();
+
+      await sessionStart?.({ type: "session_start" }, ctx);
+
+      // before_agent_start should not inject before .memory exists
+      const beforeInit = await beforeStart?.(
+        {
+          type: "before_agent_start",
+          prompt: "pre-init",
+          systemPrompt: "base-pre",
+        },
+        ctx
+      );
+      expect(beforeInit).toBeUndefined();
+
+      // Simulate mid-session init
+      const branchDir = path.join(projectDir, ".memory", "branches", "main");
+      fs.mkdirSync(branchDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(projectDir, ".memory", "state.yaml"),
+        ["active_branch: main", 'initialized: "2026-02-25T00:00:00Z"'].join(
+          "\n"
+        )
+      );
+      fs.writeFileSync(path.join(branchDir, "log.md"), "");
+      fs.writeFileSync(
+        path.join(branchDir, "commits.md"),
+        "# main\n\n**Purpose:** Main branch\n"
+      );
+      fs.writeFileSync(path.join(branchDir, "metadata.yaml"), "");
+
+      const initialToken = "[[ROADMAP:lazy-initial]]";
+      const updatedToken = "[[ROADMAP:lazy-updated]]";
+      writeRoadmap(projectDir, `# Roadmap\n\n${initialToken}`);
+
+      // Act
+      const firstResult = (await beforeStart?.(
+        {
+          type: "before_agent_start",
+          prompt: "first",
+          systemPrompt: "base-one",
+        },
+        ctx
+      )) as { systemPrompt?: string } | undefined;
+      const firstSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(firstResult),
+        "base-one"
+      );
+
+      writeRoadmap(projectDir, `# Roadmap\n\n${updatedToken}`);
+
+      const secondResult = (await beforeStart?.(
+        {
+          type: "before_agent_start",
+          prompt: "second",
+          systemPrompt: "base-two",
+        },
+        ctx
+      )) as { systemPrompt?: string } | undefined;
+      const secondSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(secondResult),
+        "base-two"
+      );
+
+      // Assert
+      expect(firstSnapshot).toContain(initialToken);
+      expect(firstSnapshot).not.toContain(updatedToken);
+      expect(secondSnapshot).toBe(firstSnapshot);
+      expect(secondSnapshot).toContain(initialToken);
+      expect(secondSnapshot).not.toContain(updatedToken);
+    } finally {
+      fs.rmSync(projectDir, { recursive: true, force: true });
+    }
+  });
+
   it("should return error from memory_commit when subagent fails", async () => {
     // Arrange
     const { projectDir, cleanup } = setupInitializedProject();
@@ -745,7 +856,7 @@ describe("extensionWiring", () => {
 
   // --- before_agent_start hook ---
 
-  it("should inject status message on first before_agent_start", async () => {
+  it("should inject status into systemPrompt on first before_agent_start", async () => {
     const { projectDir, cleanup } = setupInitializedProject();
     try {
       const mockPi = createMockPi();
@@ -756,14 +867,21 @@ describe("extensionWiring", () => {
       await sessionStart?.({ type: "session_start" }, ctx);
 
       const beforeStart = getHandler(mockPi.handlers, "before_agent_start");
+      const basePrompt = "...";
       const result = (await beforeStart?.(
-        { type: "before_agent_start", prompt: "hello", systemPrompt: "..." },
+        {
+          type: "before_agent_start",
+          prompt: "hello",
+          systemPrompt: basePrompt,
+        },
         ctx
-      )) as { message?: { content: string } } | undefined;
+      )) as { systemPrompt?: string; message?: unknown } | undefined;
 
       expect(result).toBeDefined();
-      expect(result?.message?.content).toContain("# Memory Status");
-      expect(result?.message?.content).toContain("Active branch:");
+      expect(result?.message).toBeUndefined();
+      expect(result?.systemPrompt).toContain(basePrompt);
+      expect(result?.systemPrompt).toContain("# Memory Status");
+      expect(result?.systemPrompt).toContain("Active branch:");
     } finally {
       cleanup();
     }
@@ -788,20 +906,22 @@ describe("extensionWiring", () => {
       const result = (await beforeStart?.(
         { type: "before_agent_start", prompt: "hello", systemPrompt: "..." },
         ctx
-      )) as { message?: { content: string } } | undefined;
+      )) as { systemPrompt?: string } | undefined;
 
       expect(result).toBeDefined();
-      expect(result?.message?.content).toContain("Roadmap truncated");
-      expect(result?.message?.content).toContain("read .memory/main.md");
-      expect(result?.message?.content.length ?? 0).toBeLessThan(5000);
+      expect(result?.systemPrompt).toContain("Roadmap truncated");
+      expect(result?.systemPrompt).toContain("read .memory/main.md");
+      expect(result?.systemPrompt?.length ?? 0).toBeLessThan(5000);
     } finally {
       cleanup();
     }
   });
 
-  it("should NOT inject status on subsequent before_agent_start calls", async () => {
+  it("should inject status on EVERY before_agent_start call while keeping base prompt current", async () => {
     const { projectDir, cleanup } = setupInitializedProject();
     try {
+      writeRoadmap(projectDir, "# Roadmap\n\n[[ROADMAP:base]]");
+
       const mockPi = createMockPi();
       activate(mockPi.api);
 
@@ -810,26 +930,55 @@ describe("extensionWiring", () => {
       await sessionStart?.({ type: "session_start" }, ctx);
 
       const beforeStart = getHandler(mockPi.handlers, "before_agent_start");
-      const event = {
+
+      const firstEvent = {
         type: "before_agent_start",
         prompt: "hello",
-        systemPrompt: "...",
+        systemPrompt: "base-one",
+      };
+      const secondEvent = {
+        type: "before_agent_start",
+        prompt: "hello",
+        systemPrompt: "base-two",
       };
 
-      // First call injects
-      await beforeStart?.(event, ctx);
-      // Second call should not inject
-      const result2 = await beforeStart?.(event, ctx);
+      // First call injects and freezes the memory snapshot
+      const result1 = (await beforeStart?.(firstEvent, ctx)) as {
+        systemPrompt?: string;
+      };
 
-      expect(result2).toBeUndefined();
+      // Subsequent calls MUST also inject to prevent Pi from resetting to base prompt
+      const result2 = (await beforeStart?.(secondEvent, ctx)) as {
+        systemPrompt?: string;
+      };
+
+      const firstPrompt = readInjectedSystemPrompt(result1);
+      const secondPrompt = readInjectedSystemPrompt(result2);
+
+      const firstSnapshot = extractFrozenSnapshot(
+        firstPrompt,
+        firstEvent.systemPrompt
+      );
+      const secondSnapshot = extractFrozenSnapshot(
+        secondPrompt,
+        secondEvent.systemPrompt
+      );
+
+      expect(firstSnapshot).toContain("# Memory Status");
+      expect(firstSnapshot).toContain("[[ROADMAP:base]]");
+      expect(secondSnapshot).toBe(firstSnapshot);
     } finally {
       cleanup();
     }
   });
 
-  it("should re-inject status after session_start resets the flag", async () => {
+  it("should rebuild frozen snapshot after session_start resets the epoch", async () => {
     const { projectDir, cleanup } = setupInitializedProject();
     try {
+      const initialToken = "[[ROADMAP:before-session-start-reset]]";
+      const updatedToken = "[[ROADMAP:after-session-start-reset]]";
+      writeRoadmap(projectDir, `# Roadmap\n\n${initialToken}`);
+
       const mockPi = createMockPi();
       activate(mockPi.api);
 
@@ -839,34 +988,58 @@ describe("extensionWiring", () => {
       const event = {
         type: "before_agent_start",
         prompt: "hello",
-        systemPrompt: "...",
+        systemPrompt: "base",
       };
 
-      // First session: inject status
+      // First session: inject and freeze status
       await sessionStart?.({ type: "session_start" }, ctx);
-      await beforeStart?.(event, ctx);
+      const result1 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const firstSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result1),
+        event.systemPrompt
+      );
+      expect(firstSnapshot).toContain(initialToken);
 
-      // Second call should not inject
-      const result2 = await beforeStart?.(event, ctx);
-      expect(result2).toBeUndefined();
+      // Edit roadmap within same epoch: snapshot must remain frozen
+      writeRoadmap(projectDir, `# Roadmap\n\n${updatedToken}`);
 
-      // session_start fires again (session switch / reload) — resets the flag
+      const result2 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const secondSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result2),
+        event.systemPrompt
+      );
+      expect(secondSnapshot).toBe(firstSnapshot);
+      expect(secondSnapshot).not.toContain(updatedToken);
+
+      // session_start resets the epoch and should rebuild from updated roadmap
       await sessionStart?.({ type: "session_start" }, ctx);
 
-      // Now it should inject again
-      const result3 = (await beforeStart?.(event, ctx)) as
-        | { message?: { content: string } }
-        | undefined;
-      expect(result3).toBeDefined();
-      expect(result3?.message?.content).toContain("# Memory Status");
+      const result3 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const thirdSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result3),
+        event.systemPrompt
+      );
+      expect(thirdSnapshot).toContain("# Memory Status");
+      expect(thirdSnapshot).toContain(updatedToken);
+      expect(thirdSnapshot).not.toBe(firstSnapshot);
     } finally {
       cleanup();
     }
   });
 
-  it("should re-inject status after session_switch resets the flag", async () => {
+  it("should rebuild frozen snapshot after session_switch resets the epoch", async () => {
     const { projectDir, cleanup } = setupInitializedProject();
     try {
+      const initialToken = "[[ROADMAP:before-session-switch-reset]]";
+      const updatedToken = "[[ROADMAP:after-session-switch-reset]]";
+      writeRoadmap(projectDir, `# Roadmap\n\n${initialToken}`);
+
       const mockPi = createMockPi();
       activate(mockPi.api);
 
@@ -877,13 +1050,30 @@ describe("extensionWiring", () => {
       const event = {
         type: "before_agent_start",
         prompt: "hello",
-        systemPrompt: "...",
+        systemPrompt: "base",
       };
 
       await sessionStart?.({ type: "session_start" }, ctx);
-      await beforeStart?.(event, ctx);
-      const result2 = await beforeStart?.(event, ctx);
-      expect(result2).toBeUndefined();
+      const result1 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const firstSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result1),
+        event.systemPrompt
+      );
+      expect(firstSnapshot).toContain(initialToken);
+
+      writeRoadmap(projectDir, `# Roadmap\n\n${updatedToken}`);
+
+      const result2 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const secondSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result2),
+        event.systemPrompt
+      );
+      expect(secondSnapshot).toBe(firstSnapshot);
+      expect(secondSnapshot).not.toContain(updatedToken);
 
       await sessionSwitch?.(
         {
@@ -894,19 +1084,28 @@ describe("extensionWiring", () => {
         ctx
       );
 
-      const result3 = (await beforeStart?.(event, ctx)) as
-        | { message?: { content: string } }
-        | undefined;
-      expect(result3).toBeDefined();
-      expect(result3?.message?.content).toContain("# Memory Status");
+      const result3 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const thirdSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result3),
+        event.systemPrompt
+      );
+      expect(thirdSnapshot).toContain("# Memory Status");
+      expect(thirdSnapshot).toContain(updatedToken);
+      expect(thirdSnapshot).not.toBe(firstSnapshot);
     } finally {
       cleanup();
     }
   });
 
-  it("should re-inject status after session_compact resets the flag", async () => {
+  it("should rebuild frozen snapshot after session_compact resets the epoch", async () => {
     const { projectDir, cleanup } = setupInitializedProject();
     try {
+      const initialToken = "[[ROADMAP:before-session-compact-reset]]";
+      const updatedToken = "[[ROADMAP:after-session-compact-reset]]";
+      writeRoadmap(projectDir, `# Roadmap\n\n${initialToken}`);
+
       const mockPi = createMockPi();
       activate(mockPi.api);
 
@@ -917,22 +1116,91 @@ describe("extensionWiring", () => {
       const event = {
         type: "before_agent_start",
         prompt: "hello",
-        systemPrompt: "...",
+        systemPrompt: "base",
       };
 
-      // Initial session + first injection
       await sessionStart?.({ type: "session_start" }, ctx);
-      await beforeStart?.(event, ctx);
+      const result1 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const firstSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result1),
+        event.systemPrompt
+      );
+      expect(firstSnapshot).toContain(initialToken);
 
-      // Compaction resets the flag
+      writeRoadmap(projectDir, `# Roadmap\n\n${updatedToken}`);
+
+      const result2 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const secondSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result2),
+        event.systemPrompt
+      );
+      expect(secondSnapshot).toBe(firstSnapshot);
+      expect(secondSnapshot).not.toContain(updatedToken);
+
       await sessionCompact?.({ type: "session_compact" }, ctx);
 
-      // Should inject again
-      const result = (await beforeStart?.(event, ctx)) as
-        | { message?: { content: string } }
-        | undefined;
-      expect(result).toBeDefined();
-      expect(result?.message?.content).toContain("# Memory Status");
+      const result3 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      const thirdSnapshot = extractFrozenSnapshot(
+        readInjectedSystemPrompt(result3),
+        event.systemPrompt
+      );
+      expect(thirdSnapshot).toContain("# Memory Status");
+      expect(thirdSnapshot).toContain(updatedToken);
+      expect(thirdSnapshot).not.toBe(firstSnapshot);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("should keep frozen snapshot stable when main.md is edited mid-epoch", async () => {
+    const { projectDir, cleanup } = setupInitializedProject();
+    try {
+      // Write initial main.md
+      fs.writeFileSync(
+        path.join(projectDir, ".memory", "main.md"),
+        "# Roadmap\n\nOriginal content before edit."
+      );
+
+      const mockPi = createMockPi();
+      activate(mockPi.api);
+
+      const ctx = createCtx(projectDir);
+      const sessionStart = getHandler(mockPi.handlers, "session_start");
+      const beforeStart = getHandler(mockPi.handlers, "before_agent_start");
+      const event = {
+        type: "before_agent_start",
+        prompt: "hello",
+        systemPrompt: "base",
+      };
+
+      // Session start + first injection captures snapshot
+      await sessionStart?.({ type: "session_start" }, ctx);
+      const result1 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      expect(result1?.systemPrompt).toContain("Original content before edit");
+
+      // Edit main.md mid-session (simulates memory_commit updating roadmap)
+      fs.writeFileSync(
+        path.join(projectDir, ".memory", "main.md"),
+        "# Roadmap\n\nCompletely rewritten after commit."
+      );
+
+      // Second call in same epoch must return the ORIGINAL snapshot
+      const result2 = (await beforeStart?.(event, ctx)) as {
+        systemPrompt?: string;
+      };
+      expect(result2?.systemPrompt).toBe(result1.systemPrompt);
+      expect(result2?.systemPrompt).toContain("Original content before edit");
+      expect(result2?.systemPrompt).not.toContain(
+        "Completely rewritten after commit"
+      );
     } finally {
       cleanup();
     }

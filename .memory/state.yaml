@@ -2,9 +2,9 @@ active_branch: main
 initialized: "2026-02-25T20:35:12Z"
 last_commit:
   branch: main
-  hash: 587516a0
-  timestamp: "2026-02-28T22:48:28.696Z"
-  summary: "Added roadmap update reminder after memory_commit — always-on reminder with opt-out via update_roadmap: false, protocol guidance in SKILL.md and .memory/AGENTS.md template, fixed stale main.md (5 tools → 2), published v0.1.5"
+  hash: 554da5f3
+  timestamp: "2026-03-01T18:08:49.998Z"
+  summary: "Strengthened cache-safety and frozen-snapshot test coverage: rewrote cache-safety properties around per-call base-prompt + epoch freeze/reset invariants, added mutation-checklist comments, updated index frozen-snapshot tests to assert snapshot refresh on session_start/switch/compact, and added lazy-init snapshot freeze test for before_agent_start."
 sessions:
   - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-gcc--/2026-02-25T20-34-45-614Z_282b30df-0407-4f3f-bba9-cf6cf15c1478.jsonl"
     branch: main
@@ -42,3 +42,9 @@ sessions:
   - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-brain--/2026-02-28T22-32-22-811Z_2e5fd5c7-5f40-4f86-b5ca-1811e65d423e.jsonl"
     branch: main
     started: "2026-02-28T22:32:22.825Z"
+  - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-brain--/2026-03-01T14-18-27-368Z_f62b427e-0d8e-4714-8868-796900f8c4d7.jsonl"
+    branch: main
+    started: "2026-03-01T14:18:27.382Z"
+  - file: "/home/will/.pi/agent/sessions/--home-will-projects-pi-brain--/2026-03-01T17-38-35-694Z_53449c43-ea81-485c-80b9-e583a1f4e74e.jsonl"
+    branch: main
+    started: "2026-03-01T17:38:35.708Z"

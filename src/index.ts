@@ -101,7 +101,7 @@ function resolveSkillPath(): string {
 export default function activate(pi: ExtensionAPI) {
   let state: MemoryState | null = null;
   let branchManager: BranchManager | null = null;
-  let statusInjected = false;
+  let frozenStatusSnapshot: string | null = null;
 
   function tryLoad(ctx: ExtensionContext): boolean {
     if (isMemoryReady(state, branchManager)) {
@@ -230,7 +230,7 @@ export default function activate(pi: ExtensionAPI) {
     state = new MemoryState(ctx.cwd);
     state.load();
     branchManager = new BranchManager(ctx.cwd);
-    statusInjected = false;
+    frozenStatusSnapshot = null;
 
     if (!state.isInitialized) {
       setBrainFooterStatus(ctx, state, branchManager);
@@ -253,7 +253,7 @@ export default function activate(pi: ExtensionAPI) {
   });
 
   pi.on("session_switch", (_event, ctx) => {
-    statusInjected = false;
+    frozenStatusSnapshot = null;
 
     state = new MemoryState(ctx.cwd);
     state.load();
@@ -266,11 +266,7 @@ export default function activate(pi: ExtensionAPI) {
     setBrainFooterStatus(ctx, state, branchManager);
   });
 
-  pi.on("before_agent_start", (_event: BeforeAgentStartEvent, ctx) => {
-    if (statusInjected) {
-      return;
-    }
-
+  pi.on("before_agent_start", (event: BeforeAgentStartEvent, ctx) => {
     if (
       !tryLoad(ctx) ||
       !isMemoryReady(state, branchManager) ||
@@ -279,25 +275,21 @@ export default function activate(pi: ExtensionAPI) {
       return;
     }
 
-    statusInjected = true;
+    if (frozenStatusSnapshot === null) {
+      frozenStatusSnapshot = buildStatusView(state, branchManager, ctx.cwd, {
+        compact: true,
+        roadmapCharLimit: BEFORE_AGENT_START_ROADMAP_CHAR_LIMIT,
+        branchLimit: BEFORE_AGENT_START_BRANCH_LIMIT,
+      });
+    }
 
-    const status = buildStatusView(state, branchManager, ctx.cwd, {
-      compact: true,
-      roadmapCharLimit: BEFORE_AGENT_START_ROADMAP_CHAR_LIMIT,
-      branchLimit: BEFORE_AGENT_START_BRANCH_LIMIT,
-    });
     return {
-      message: {
-        customType: "brain-status",
-        content: status,
-        display: true,
-        details: {},
-      },
+      systemPrompt: `${event.systemPrompt}\n\n${frozenStatusSnapshot}`,
     };
   });
 
   pi.on("session_compact", () => {
-    statusInjected = false;
+    frozenStatusSnapshot = null;
   });
 
   pi.on("resources_discover", () => ({

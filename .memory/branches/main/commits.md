@@ -105,3 +105,24 @@ Initial development established the `pi-brain` extension (formerly `pi-gcc`) wit
 - Resolved discrepancies between documentation and implementation by correcting the project roadmap to reflect the 2-tool model.
 - Established regression coverage for the reminder's opt-out behavior and presence in the tool output.
 - Published v0.1.5 to baseline these protocol-enforcement improvements and documentation baselines.
+
+---
+
+## Commit 554da5f3 | 2026-03-01T18:08:49.998Z
+
+### Branch Purpose
+
+Maintain the primary developmental roadmap and memory for the `pi-brain` extension, capturing core architectural decisions and evolution of the memory protocol.
+
+### Previous Progress Summary
+
+Initial development established the `pi-brain` extension (formerly `pi-gcc`) with lazy state initialization and a 600 KB log size threshold to manage context growth. Architectural milestones include migrating to the `memory_*` tool namespace, implementing autonomous subagent-based distillation, and enforcing prompt-cache safety invariants. The protocol uses a 2-tool model (`memory_commit`, `memory_branch`) with agent-driven initialization and roadmap maintenance reminders to prevent context drift. Recently, the extension was published as v0.1.5, baselining core protocol-enforcement and documentation improvements.
+
+### This Commit's Contribution
+
+- Switched memory status injection from a visible custom message to a `systemPrompt` update in the `before_agent_start` hook to improve model focus.
+- Implemented "Frozen Snapshot" logic for the roadmap (`main.md`), ensuring cache stability by providing a fixed view of the memory state for the duration of a session.
+- Rewrote cache-safety property-based tests to assert per-call `systemPrompt` invariants and one-time injection per epoch.
+- Added lifecycle-gated snapshot refresh logic: session start, switch, and compaction now trigger a fresh snapshot to maintain accuracy without mid-session drift.
+- Strengthened test coverage with lazy-initialization freeze tests to ensure snapshots are correctly captured even during first-use setup.
+- Formalized the "Base Prompt + Epoch Freeze" pattern to prevent unpredictable prefix changes that would invalidate LLM prompt caches.
